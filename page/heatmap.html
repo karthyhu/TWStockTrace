@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股熱力圖</title>
+    
+    <!-- 外部資源 -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    <!-- 本地樣式表 -->
+    <link rel="stylesheet" href="heatmap.css">
+</head>
+<body>
+    <div class="container">
+        <h1>台股即時熱力圖</h1>
+        
+        <div class="info-panel">
+            <div class="date-info" id="date-info">載入中...</div>
+            <div class="update-time" id="update-time">更新時間: 載入中...</div>
+        </div>
+        
+        <div id="loading" class="loading">
+            正在載入股票資料...
+        </div>
+        
+        <div id="heatmap"></div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #d73027;"></div>
+                <span>大跌 (-10%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f46d43;"></div>
+                <span>跌 (-5%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #fee08b;"></div>
+                <span>微跌 (-1%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ffffbf;"></div>
+                <span>平盤 (0%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #d9ef8b;"></div>
+                <span>微漲 (+1%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #a6d96a;"></div>
+                <span>漲 (+5%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #1a9641;"></div>
+                <span>大漲 (+10%)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本地腳本 -->
+    <script src="heatmap.js"></script>
+</body>
+</html>

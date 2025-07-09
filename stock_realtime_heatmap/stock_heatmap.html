@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股題材熱力圖</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>台股題材熱力圖</h1>
+            <div class="update-info">
+                最後更新: <span id="lastUpdate">--</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="refreshBtn">手動更新</button>
+            <label>
+                <input type="checkbox" id="autoRefresh" checked>
+                自動更新 (每5秒)
+            </label>
+        </div>
+
+        <div class="color-legend">
+            <div class="legend-item">
+                <div class="legend-color red"></div>
+                <span>下跌 (<-1%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color yellow"></div>
+                <span>持平 (-1%~1%)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color green"></div>
+                <span>上漲 (>1%)</span>
+            </div>
+        </div>
+
+        <div id="heatmap" class="heatmap-container">
+            <div class="treemap-title">Taiwan Stock Category Heat Map</div>
+            <div class="treemap-grid">
+                <!-- 熱力圖將在這裡動態生成 -->
+            </div>
+        </div>
+
+        <div id="tooltip" class="tooltip"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
