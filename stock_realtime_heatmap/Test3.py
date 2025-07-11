@@ -185,7 +185,7 @@ def update_realtime_data(stocks_df):
                     current_price = float(realtime_data['latest_trade_price'])
                 
                 last_day_price = stocks_df.loc['last_day_price' , stock_id]
-                current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 2)
+                current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 1)
                 
                 stocks_df.loc['realtime_price' , stock_id] = current_price
                 stocks_df.loc['realtime_change' , stock_id] = current_change_percent
@@ -198,11 +198,23 @@ initial_stocks_df = load_initial_data()
 app.layout = html.Div([
     html.H1("Taiwan Stock Realtime Heatmap", style={'textAlign': 'center', 'marginBottom': 30}),
     html.Div([
+        html.Label('Display Mode：', style={'marginRight': '10px'}),
+        dcc.RadioItems(
+            options=[
+                {'label': 'Normal Display', 'value': 'equal'},
+                {'label': 'Market Cap Display', 'value': 'market'}
+            ],
+            id='size-mode',
+            value='equal',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+        )
+    ], style={'textAlign': 'center', 'marginBottom': 20}),
+    html.Div([
         html.Span("Last Update Time: ", style={'fontWeight': 'bold'}),
         html.Span(id='last-update-time', style={'color': 'blue'})
     ], style={'textAlign': 'center', 'marginBottom': 20}),
     dcc.Graph(id='live-treemap'),
-    dcc.Interval(id='interval-update', interval=3000, n_intervals=0),
+    dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
     # 顯示點擊股票後的連結，開啟新分頁
     html.Div(id='stock-link-container', style={'textAlign': 'center', 'marginTop': 20})
 ])
@@ -210,9 +222,11 @@ app.layout = html.Div([
 @app.callback(
     [Output('live-treemap', 'figure'),
      Output('last-update-time', 'children')],
-    Input('interval-update', 'n_intervals')
+    [Input('interval-update', 'n_intervals'),
+     Input('size-mode', 'value')]
 )
-def update_treemap(n):
+# def update_treemap(n):
+def update_treemap(n, size_mode):
     # 更新即時股價
     updated_stocks_df = update_realtime_data(initial_stocks_df.copy())
 
@@ -223,7 +237,6 @@ def update_treemap(n):
     for stock_id, row in df_transposed.iterrows():
         # 計算市值
         market_value = row['issue_shares'] * row['realtime_price'] if not pd.isna(row['realtime_price']) else 0
-
         # 為每個股票的每個類別建立一筆資料
         for category in row['category']:
             treemap_data.append({
@@ -247,12 +260,30 @@ def update_treemap(n):
     # 根據市值調整比例
     treemap_df['proportion'] = treemap_df['market_value'] / category_market_values
 
+    # 根據顯示模式決定區塊大小
+    if size_mode == 'equal':
+        values = [1] * len(treemap_df)
+    else:
+        # 市值大小模式，分 5 區間
+        def map_size(mv):
+            # 區間對應大小
+            if mv > 6e11:      # 6000e 以上
+                return 5
+            elif mv > 1e11:    # 1000e 以上
+                return 4
+            elif mv > 5e10:    # 500e 以上
+                return 3
+            elif mv > 1e10:    # 100e 以上
+                return 2
+            else:              # 100e 以下
+                return 1
+        values = treemap_df['market_value'].apply(map_size).tolist()
+    
     # 建立 treemap
     fig = px.treemap(
         treemap_df,
         path=['stock_meta', 'category', 'stock_name'],
-        # values='proportion',  # 使用市值比例作為大小
-        values=[1] * len(treemap_df), # 設定所有值為 1，確保大小相等
+        values=values,
         color='realtime_change',
         color_continuous_scale='RdYlGn_r',
         title='',
@@ -262,11 +293,12 @@ def update_treemap(n):
         custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
     )
 
-    fig.update_traces(marker=dict(cornerradius=3), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]}%")
+    fig.update_traces(marker=dict(cornerradius=3), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
         margin=dict(t=50, l=10, r=10, b=10),
-        height=800
+        height=800,
+        coloraxis_colorbar_tickformat='.2f'
     )
 
     # 取得當前時間
