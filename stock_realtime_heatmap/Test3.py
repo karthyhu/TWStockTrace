@@ -252,14 +252,14 @@ def update_treemap(n):
         treemap_df,
         path=['stock_meta', 'category', 'stock_name'],
         # values='proportion',  # 使用市值比例作為大小
-        values=[1] * len(treemap_df),  # 設定所有值為 1，確保大小相等
+        values=[1] * len(treemap_df), # 設定所有值為 1，確保大小相等
         color='realtime_change',
         color_continuous_scale='RdYlGn_r',
         title='',
         range_color=[-10, 10],
         color_continuous_midpoint=0,
         hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type', 'market_value'],
-        custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change']
+        custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
     )
 
     fig.update_traces(marker=dict(cornerradius=3), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]}%")
@@ -284,9 +284,12 @@ def display_stock_link(clickData):
         return ''
     point = clickData['points'][0]
     stock_id = point['customdata'][1]
+    # 取得 stock_type，選擇 TradingView 前綴
+    stock_type = point['customdata'][4]
+    prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
     url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
     url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
-    url_tradingView = f"https://tw.tradingview.com/chart/?symbol=TWSE%3A{stock_id}"
+    url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
     
     return html.Div([
         html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
