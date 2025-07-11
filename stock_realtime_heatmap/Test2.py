@@ -6,6 +6,8 @@ import twstock
 import datetime
 import pprint
 import time
+import requests  
+import os
 
 #1. 如何自動獲取上個交易日的 .json (或任意某天的)
 
@@ -29,11 +31,48 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, target_code):
             }
     return None  # 如果找不到，回傳 None
 
+def DownlodStockData():
+    twse_file_path = 'STOCK_DAY_ALL.json'
+    tpex_file_path = 'tpex_mainboard_daily_close_quotes.json'
+
+    # 判斷 TWSE 檔案是否已存在
+    if not os.path.exists(twse_file_path):
+        url = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL'
+        res = requests.get(url)
+
+        if res.status_code == 200:  # 確保請求成功
+            jsondata = res.json()  # 將回應轉換為 JSON 格式
+            with open(twse_file_path, 'w', encoding='utf-8') as f:
+                json.dump(jsondata, f, ensure_ascii=False, indent=4)  # 儲存 JSON 檔案
+            print(f"JSON 檔案已成功儲存為 '{twse_file_path}'")
+        else:
+            print(f"TWSE 無法下載資料，HTTP 狀態碼: {res.status_code}")
+    else:
+        print(f"檔案 '{twse_file_path}' 已存在，跳過下載。")
+
+    # 判斷 TPEX 檔案是否已存在
+    if not os.path.exists(tpex_file_path):
+        url = 'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes'
+        res = requests.get(url)
+
+        if res.status_code == 200:  # 確保請求成功
+            jsondata = res.json()  # 將回應轉換為 JSON 格式
+            with open(tpex_file_path, 'w', encoding='utf-8') as f:
+                json.dump(jsondata, f, ensure_ascii=False, indent=4)  # 儲存 JSON 檔案
+            print(f"JSON 檔案已成功儲存為 '{tpex_file_path}'")
+        else:
+            print(f"TPEX 無法下載資料，HTTP 狀態碼: {res.status_code}")
+    else:
+        print(f"檔案 '{tpex_file_path}' 已存在，跳過下載。")
+        
+
 if __name__ == "__main__":
     
+    DownlodStockData()
+        
     analysis_json_path = './stock_data.json'
-    past_day_json_path_twse = './json_file/STOCK_DAY_0703.json'
-    past_day_json_path_tpex = './json_file/tpex_mainboard_daily_close_quotes_0704.json'
+    past_day_json_path_twse = './STOCK_DAY_ALL.json'
+    past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
 
     with open(analysis_json_path, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
@@ -78,7 +117,6 @@ if __name__ == "__main__":
                 print(f"找不到 Code {stock_id} 的過去資訊")
     
     stocks_df = pd.DataFrame(stocks_info_list)
-    
     # print(stocks_df)
     
     while True:
@@ -133,45 +171,8 @@ if __name__ == "__main__":
             print(category_stocks)
         # print 類別 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
-        # # 準備 treemap 資料
-        # treemap_data = []
-        # df_transposed = stocks_df.T
-        
-        # for stock_id, row in df_transposed.iterrows():
-        #     # 為每個股票的每個類別建立一筆資料
-        #     for category in row['category']:
-        #         treemap_data.append({
-        #             'stock_meta': 'Taiwan Stock',
-        #             'stock_id': stock_id,
-        #             'stock_name': row['stock_name'],
-        #             'category': category,
-        #             'realtime_change': row['realtime_change'],
-        #             'realtime_price': row['realtime_price'],
-        #             'last_day_price': row['last_day_price'],
-        #             'stock_type': row['stock_type']
-        #         })
-        
-        # # 轉換成 DataFrame
-        # treemap_df = pd.DataFrame(treemap_data)
-        
-        # # 建立 treemap
-        # fig = px.treemap(
-        #     treemap_df,
-        #     path=['stock_meta', 'category', 'stock_name'],
-        #     values=[1] * len(treemap_df),  # 設定所有值為 1，確保大小相等
-        #     color='realtime_change',
-        #     color_continuous_scale='RdYlGn_r',
-        #     title='Taiwan Stock Category Heat Map',
-        #     range_color=[-10, 10],
-        #     color_continuous_midpoint=0,
-        #     hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type']
-        # )
-        
-        # fig.update_traces(marker=dict(cornerradius=5))
-        # fig.show()
-
         # 每 5 秒執行一次
-        # time.sleep(5)
+        time.sleep(5)
 
         
 
