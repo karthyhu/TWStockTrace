@@ -8,8 +8,36 @@ import twstock
 import datetime
 import requests
 import os
+import time
 
 app = dash.Dash(__name__)
+
+def send_discord_category_notification(treemap_df):
+    """發送股票群組漲跌幅資訊到 Discord"""
+    try:
+        webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
+        if not webhook_url:
+            print("Discord webhook URL not found. Skipping notification.")
+            return
+        # 計算各類別平均漲跌幅與數量
+        category_stats = treemap_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(1)
+        category_stats = category_stats.sort_values('mean', ascending=False)
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        embed = {"title": f"📊 台股產業類股漲跌幅 - {current_time}", "color": 0x00ff00, "fields": []}
+        text = ""
+        for cat, row in category_stats.iterrows():
+            mean = row['mean']; cnt = int(row['count'])
+            emoji = "🔴" if mean > 0 else "🟢" if mean < 0 else "🟡"
+            text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n"
+        embed['fields'].append({"name": "產業類股漲跌幅", "value": text, "inline": False})
+        payload = {"embeds": [embed]}
+        resp = requests.post(webhook_url, json=payload)
+        if resp.status_code == 204:
+            print("Discord notification sent successfully!")
+        else:
+            print(f"Failed to send Discord notification. Status code: {resp.status_code}")
+    except Exception as e:
+        print(f"Error sending Discord notification: {e}")
 
 def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_twse, company_json_data_tpex, target_code):
     """根據 Code 找到 ClosingPrice 和 Name"""
@@ -38,6 +66,8 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
                 'stock_type': 'TPEx',
                 'issue_shares': float(issue_shares)
             }
+        
+    print(f"找不到股票代號：{target_code}")
     return None  # 如果找不到，回傳 None
 
 def downlod_stock_company_data():
@@ -170,7 +200,14 @@ def load_initial_data():
 
 # 更新即時股價資料
 def update_realtime_data(stocks_df):
-    track_stock_realtime_data = twstock.realtime.get(list(stocks_df.columns))
+    
+    # track_stock_realtime_data = twstock.realtime.get(list(stocks_df.columns))
+    try:
+        track_stock_realtime_data = twstock.realtime.get(list(stocks_df.columns))
+        time.sleep(5)
+    except (KeyError, ValueError):
+        print("部分即時資料缺少 timestamp，略過")
+        track_stock_realtime_data = {}
 
     for stock_id in stocks_df.columns:
         if stock_id in track_stock_realtime_data and 'realtime' in track_stock_realtime_data[stock_id]:
@@ -253,6 +290,10 @@ def update_treemap(n, size_mode):
 
     # 轉換成 DataFrame
     treemap_df = pd.DataFrame(treemap_data)
+
+    # 每2次更新（即10秒）發送 Discord 群組漲跌幅通知
+    # if n and n % 2 == 0:
+        # send_discord_category_notification(treemap_df)
 
     # 計算族群加總市值
     category_market_values = treemap_df.groupby('category')['market_value'].transform('sum')
