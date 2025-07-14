@@ -1,1 +1,8 @@
 requests
+python-dotenv
+matplotlib
+seaborn
+pandas
+Pillow
+plotly
+kaleido

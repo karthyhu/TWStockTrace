@@ -1346,6 +1346,50 @@
         "turnover": 1990688460,
         "change": 4.2,
         "transaction": 22795
+      },
+      {
+        "date": "114-07-09",
+        "open": 59.1,
+        "high": 60.2,
+        "low": 56.9,
+        "close": 59.0,
+        "volume": 24361697,
+        "turnover": 1419421037,
+        "change": 0.3,
+        "transaction": 16371
+      },
+      {
+        "date": "114-07-10",
+        "open": 59.2,
+        "high": 59.4,
+        "low": 57.5,
+        "close": 57.5,
+        "volume": 10199783,
+        "turnover": 594720460,
+        "change": -1.5,
+        "transaction": 7052
+      },
+      {
+        "date": "114-07-11",
+        "open": 58.0,
+        "high": 58.5,
+        "low": 57.1,
+        "close": 57.5,
+        "volume": 4909283,
+        "turnover": 283283168,
+        "change": 0.0,
+        "transaction": 3517
+      },
+      {
+        "date": "114-07-14",
+        "open": 58.3,
+        "high": 61.5,
+        "low": 56.8,
+        "close": 56.8,
+        "volume": 14498542,
+        "turnover": 864636964,
+        "change": -0.7,
+        "transaction": 10665
       }
     ],
     "kline_last_update": "2025-07-14 01:06:38"
@@ -2697,6 +2741,50 @@
         "turnover": 1879535528,
         "change": 1.55,
         "transaction": 15610
+      },
+      {
+        "date": "114-07-09",
+        "open": 16.95,
+        "high": 17.15,
+        "low": 15.55,
+        "close": 15.75,
+        "volume": 217036772,
+        "turnover": 3530425556,
+        "change": -1.5,
+        "transaction": 23442
+      },
+      {
+        "date": "114-07-10",
+        "open": 15.75,
+        "high": 16.3,
+        "low": 15.7,
+        "close": 16.1,
+        "volume": 68587648,
+        "turnover": 1101188059,
+        "change": 0.35,
+        "transaction": 11731
+      },
+      {
+        "date": "114-07-11",
+        "open": 16.1,
+        "high": 16.65,
+        "low": 16.0,
+        "close": 16.3,
+        "volume": 40577769,
+        "turnover": 666646425,
+        "change": 0.2,
+        "transaction": 8166
+      },
+      {
+        "date": "114-07-14",
+        "open": 16.35,
+        "high": 16.35,
+        "low": 16.0,
+        "close": 16.1,
+        "volume": 20843028,
+        "turnover": 336614717,
+        "change": -0.2,
+        "transaction": 3959
       }
     ],
     "kline_last_update": "2025-07-14 01:12:19"
@@ -4048,6 +4136,50 @@
         "turnover": 235984314,
         "change": 9.1,
         "transaction": 2430
+      },
+      {
+        "date": "114-07-09",
+        "open": 104.5,
+        "high": 106.0,
+        "low": 100.5,
+        "close": 100.5,
+        "volume": 4983510,
+        "turnover": 514853232,
+        "change": -2.5,
+        "transaction": 3864
+      },
+      {
+        "date": "114-07-10",
+        "open": 98.1,
+        "high": 100.5,
+        "low": 91.3,
+        "close": 92.3,
+        "volume": 2124753,
+        "turnover": 201188476,
+        "change": -8.2,
+        "transaction": 11647
+      },
+      {
+        "date": "114-07-11",
+        "open": 94.0,
+        "high": 96.0,
+        "low": 92.0,
+        "close": 93.0,
+        "volume": 1130617,
+        "turnover": 106042121,
+        "change": 0.7,
+        "transaction": 2888
+      },
+      {
+        "date": "114-07-14",
+        "open": 93.0,
+        "high": 93.0,
+        "low": 90.9,
+        "close": 91.3,
+        "volume": 408401,
+        "turnover": 37422474,
+        "change": -1.7,
+        "transaction": 1317
       }
     ],
     "kline_last_update": "2025-07-14 01:12:27"
@@ -4288,6 +4420,50 @@
         "turnover": 81572983,
         "change": 9.2,
         "transaction": 1000
+      },
+      {
+        "date": "114-07-09",
+        "open": 105.0,
+        "high": 107.5,
+        "low": 102.0,
+        "close": 106.0,
+        "volume": 540858,
+        "turnover": 56748950,
+        "change": 0.5,
+        "transaction": 2163
+      },
+      {
+        "date": "114-07-10",
+        "open": 104.0,
+        "high": 105.5,
+        "low": 103.0,
+        "close": 103.0,
+        "volume": 276361,
+        "turnover": 28672918,
+        "change": -3.0,
+        "transaction": 1511
+      },
+      {
+        "date": "114-07-11",
+        "open": 103.0,
+        "high": 103.5,
+        "low": 101.5,
+        "close": 103.5,
+        "volume": 149245,
+        "turnover": 15309303,
+        "change": 0.5,
+        "transaction": 361
+      },
+      {
+        "date": "114-07-14",
+        "open": 104.0,
+        "high": 104.5,
+        "low": 100.0,
+        "close": 100.0,
+        "volume": 198012,
+        "turnover": 20087914,
+        "change": -3.5,
+        "transaction": 252
       }
     ],
     "kline_last_update": "2025-07-14 01:12:35"
@@ -5639,6 +5815,50 @@
         "turnover": 2872691506,
         "change": 25.0,
         "transaction": 11087
+      },
+      {
+        "date": "114-07-09",
+        "open": 345.0,
+        "high": 352.0,
+        "low": 343.5,
+        "close": 352.0,
+        "volume": 5272169,
+        "turnover": 1833791721,
+        "change": 5.0,
+        "transaction": 6269
+      },
+      {
+        "date": "114-07-10",
+        "open": 354.0,
+        "high": 359.5,
+        "low": 351.0,
+        "close": 357.0,
+        "volume": 4216075,
+        "turnover": 1499448999,
+        "change": 5.0,
+        "transaction": 5414
+      },
+      {
+        "date": "114-07-11",
+        "open": 359.0,
+        "high": 362.5,
+        "low": 346.5,
+        "close": 348.0,
+        "volume": 4259500,
+        "turnover": 1501351677,
+        "change": -9.0,
+        "transaction": 6082
+      },
+      {
+        "date": "114-07-14",
+        "open": 346.0,
+        "high": 351.0,
+        "low": 340.0,
+        "close": 346.0,
+        "volume": 2617725,
+        "turnover": 906187308,
+        "change": -2.0,
+        "transaction": 3381
       }
     ],
     "kline_last_update": "2025-07-14 01:12:43"
@@ -7001,6 +7221,39 @@
         "turnover": 2219734568,
         "change": 3.3,
         "transaction": 24846
+      },
+      {
+        "date": "114-07-10",
+        "open": 53.6,
+        "high": 55.5,
+        "low": 52.8,
+        "close": 54.1,
+        "volume": 54085489,
+        "turnover": 2922476084,
+        "change": 0.8,
+        "transaction": 32789
+      },
+      {
+        "date": "114-07-11",
+        "open": 54.1,
+        "high": 54.4,
+        "low": 51.8,
+        "close": 53.3,
+        "volume": 27533709,
+        "turnover": 1464653412,
+        "change": -0.8,
+        "transaction": 15609
+      },
+      {
+        "date": "114-07-14",
+        "open": 53.3,
+        "high": 54.0,
+        "low": 52.0,
+        "close": 52.6,
+        "volume": 13006249,
+        "turnover": 687895577,
+        "change": -0.7,
+        "transaction": 7825
       }
     ],
     "kline_last_update": "2025-07-14 01:12:51"
@@ -8363,6 +8616,39 @@
         "turnover": 516070209,
         "change": 4.2,
         "transaction": 5568
+      },
+      {
+        "date": "114-07-10",
+        "open": 62.1,
+        "high": 66.5,
+        "low": 61.3,
+        "close": 64.5,
+        "volume": 15015043,
+        "turnover": 960516597,
+        "change": 2.5,
+        "transaction": 9737
+      },
+      {
+        "date": "114-07-11",
+        "open": 65.2,
+        "high": 65.5,
+        "low": 62.6,
+        "close": 63.3,
+        "volume": 7112957,
+        "turnover": 454680418,
+        "change": -1.2,
+        "transaction": 6104
+      },
+      {
+        "date": "114-07-14",
+        "open": 63.0,
+        "high": 63.1,
+        "low": 60.7,
+        "close": 61.8,
+        "volume": 3876339,
+        "turnover": 238575303,
+        "change": -1.5,
+        "transaction": 3126
       }
     ],
     "kline_last_update": "2025-07-14 01:13:00"
@@ -9725,6 +10011,39 @@
         "turnover": 4646896,
         "change": 0.67,
         "transaction": 290
+      },
+      {
+        "date": "114-07-10",
+        "open": 7.14,
+        "high": 7.49,
+        "low": 7.0,
+        "close": 7.15,
+        "volume": 179194,
+        "turnover": 1280682,
+        "change": -0.34,
+        "transaction": 196
+      },
+      {
+        "date": "114-07-11",
+        "open": 7.22,
+        "high": 7.28,
+        "low": 6.83,
+        "close": 7.17,
+        "volume": 80880,
+        "turnover": 577342,
+        "change": 0.02,
+        "transaction": 52
+      },
+      {
+        "date": "114-07-14",
+        "open": 7.19,
+        "high": 7.19,
+        "low": 7.02,
+        "close": 7.06,
+        "volume": 37906,
+        "turnover": 269498,
+        "change": -0.11,
+        "transaction": 72
       }
     ],
     "kline_last_update": "2025-07-14 01:13:08"
@@ -11087,6 +11406,39 @@
         "turnover": 438069616,
         "change": 3.31,
         "transaction": 1103
+      },
+      {
+        "date": "114-07-10",
+        "open": 31.29,
+        "high": 31.32,
+        "low": 31.03,
+        "close": 31.26,
+        "volume": 824088,
+        "turnover": 25708146,
+        "change": -0.03,
+        "transaction": 224
+      },
+      {
+        "date": "114-07-11",
+        "open": 31.23,
+        "high": 31.27,
+        "low": 31.0,
+        "close": 31.04,
+        "volume": 400292,
+        "turnover": 12481787,
+        "change": -0.22,
+        "transaction": 115
+      },
+      {
+        "date": "114-07-14",
+        "open": 31.04,
+        "high": 31.16,
+        "low": 31.02,
+        "close": 31.04,
+        "volume": 216067,
+        "turnover": 6712985,
+        "change": 0.0,
+        "transaction": 92
       }
     ],
     "kline_last_update": "2025-07-14 01:13:16"
@@ -12449,6 +12801,39 @@
         "turnover": 7423968,
         "change": 4.05,
         "transaction": 128
+      },
+      {
+        "date": "114-07-10",
+        "open": 48.3,
+        "high": 49.05,
+        "low": 44.3,
+        "close": 44.3,
+        "volume": 734230,
+        "turnover": 34339704,
+        "change": -0.6,
+        "transaction": 764
+      },
+      {
+        "date": "114-07-11",
+        "open": 45.3,
+        "high": 47.0,
+        "low": 44.35,
+        "close": 46.7,
+        "volume": 305181,
+        "turnover": 13987791,
+        "change": 2.4,
+        "transaction": 390
+      },
+      {
+        "date": "114-07-14",
+        "open": 47.25,
+        "high": 51.3,
+        "low": 46.7,
+        "close": 48.1,
+        "volume": 1470694,
+        "turnover": 73521210,
+        "change": 1.4,
+        "transaction": 1338
       }
     ],
     "kline_last_update": "2025-07-14 01:13:25"
@@ -13811,6 +14196,39 @@
         "turnover": 1116184195,
         "change": 11.5,
         "transaction": 6232
+      },
+      {
+        "date": "114-07-10",
+        "open": 132.5,
+        "high": 134.5,
+        "low": 128.0,
+        "close": 133.0,
+        "volume": 26689777,
+        "turnover": 3496637060,
+        "change": 5.5,
+        "transaction": 18840
+      },
+      {
+        "date": "114-07-11",
+        "open": 131.5,
+        "high": 134.0,
+        "low": 130.0,
+        "close": 134.0,
+        "volume": 7624427,
+        "turnover": 1007177016,
+        "change": 1.0,
+        "transaction": 5573
+      },
+      {
+        "date": "114-07-14",
+        "open": 135.0,
+        "high": 135.5,
+        "low": 130.5,
+        "close": 131.0,
+        "volume": 4557443,
+        "turnover": 601145639,
+        "change": -3.0,
+        "transaction": 4938
       }
     ],
     "kline_last_update": "2025-07-14 01:13:33"
@@ -15173,6 +15591,39 @@
         "turnover": 3601944109,
         "change": 12.5,
         "transaction": 19878
+      },
+      {
+        "date": "114-07-10",
+        "open": 142.5,
+        "high": 145.5,
+        "low": 140.0,
+        "close": 140.0,
+        "volume": 48821655,
+        "turnover": 6957613864,
+        "change": 1.0,
+        "transaction": 29646
+      },
+      {
+        "date": "114-07-11",
+        "open": 140.0,
+        "high": 145.5,
+        "low": 138.5,
+        "close": 144.5,
+        "volume": 19839682,
+        "turnover": 2837807374,
+        "change": 4.5,
+        "transaction": 14068
+      },
+      {
+        "date": "114-07-14",
+        "open": 144.5,
+        "high": 147.5,
+        "low": 140.5,
+        "close": 143.5,
+        "volume": 14575310,
+        "turnover": 2107345084,
+        "change": -1.0,
+        "transaction": 10395
       }
     ],
     "kline_last_update": "2025-07-14 01:13:41"
@@ -16535,6 +16986,39 @@
         "turnover": 524097024,
         "change": 7.0,
         "transaction": 7970
+      },
+      {
+        "date": "114-07-10",
+        "open": 91.7,
+        "high": 94.6,
+        "low": 90.7,
+        "close": 93.4,
+        "volume": 12726783,
+        "turnover": 1183727904,
+        "change": 2.9,
+        "transaction": 11805
+      },
+      {
+        "date": "114-07-11",
+        "open": 92.4,
+        "high": 93.3,
+        "low": 91.0,
+        "close": 91.0,
+        "volume": 4361309,
+        "turnover": 400930089,
+        "change": -2.4,
+        "transaction": 5114
+      },
+      {
+        "date": "114-07-14",
+        "open": 90.1,
+        "high": 90.5,
+        "low": 88.3,
+        "close": 88.3,
+        "volume": 1963040,
+        "turnover": 174730400,
+        "change": -2.7,
+        "transaction": 2769
       }
     ],
     "kline_last_update": "2025-07-14 01:13:49"
@@ -17897,6 +18381,39 @@
         "turnover": 508086296,
         "change": 2.55,
         "transaction": 7111
+      },
+      {
+        "date": "114-07-10",
+        "open": 34.4,
+        "high": 34.4,
+        "low": 33.35,
+        "close": 34.35,
+        "volume": 5502302,
+        "turnover": 186418215,
+        "change": -0.4,
+        "transaction": 3501
+      },
+      {
+        "date": "114-07-11",
+        "open": 34.2,
+        "high": 34.3,
+        "low": 33.8,
+        "close": 33.8,
+        "volume": 1833365,
+        "turnover": 62305680,
+        "change": -0.55,
+        "transaction": 1296
+      },
+      {
+        "date": "114-07-14",
+        "open": 33.5,
+        "high": 34.05,
+        "low": 33.0,
+        "close": 33.0,
+        "volume": 1724166,
+        "turnover": 57323028,
+        "change": -0.8,
+        "transaction": 1170
       }
     ],
     "kline_last_update": "2025-07-14 01:13:57"
@@ -19259,6 +19776,39 @@
         "turnover": 346107,
         "change": 0.26,
         "transaction": 57
+      },
+      {
+        "date": "114-07-10",
+        "open": 3.87,
+        "high": 3.87,
+        "low": 3.77,
+        "close": 3.77,
+        "volume": 44163,
+        "turnover": 167709,
+        "change": -0.11,
+        "transaction": 36
+      },
+      {
+        "date": "114-07-11",
+        "open": 3.7,
+        "high": 3.71,
+        "low": 3.7,
+        "close": 3.7,
+        "volume": 67995,
+        "turnover": 251963,
+        "change": -0.07,
+        "transaction": 80
+      },
+      {
+        "date": "114-07-14",
+        "open": 3.81,
+        "high": 3.81,
+        "low": 3.71,
+        "close": 3.71,
+        "volume": 54575,
+        "turnover": 207565,
+        "change": 0.01,
+        "transaction": 60
       }
     ],
     "kline_last_update": "2025-07-14 01:16:01"
@@ -20621,6 +21171,39 @@
         "turnover": 19300327670,
         "change": 85.0,
         "transaction": 35957
+      },
+      {
+        "date": "114-07-10",
+        "open": 1375.0,
+        "high": 1400.0,
+        "low": 1360.0,
+        "close": 1400.0,
+        "volume": 12339983,
+        "turnover": 17085260139,
+        "change": 45.0,
+        "transaction": 27552
+      },
+      {
+        "date": "114-07-11",
+        "open": 1405.0,
+        "high": 1420.0,
+        "low": 1390.0,
+        "close": 1420.0,
+        "volume": 10428598,
+        "turnover": 14673505330,
+        "change": 20.0,
+        "transaction": 20428
+      },
+      {
+        "date": "114-07-14",
+        "open": 1410.0,
+        "high": 1410.0,
+        "low": 1385.0,
+        "close": 1385.0,
+        "volume": 6067428,
+        "turnover": 8449999917,
+        "change": -35.0,
+        "transaction": 13304
       }
     ],
     "kline_last_update": "2025-07-14 01:16:09"
@@ -21983,6 +22566,39 @@
         "turnover": 68039033,
         "change": 4.0,
         "transaction": 887
+      },
+      {
+        "date": "114-07-10",
+        "open": 67.6,
+        "high": 68.4,
+        "low": 65.2,
+        "close": 65.6,
+        "volume": 873658,
+        "turnover": 58192812,
+        "change": -1.1,
+        "transaction": 1158
+      },
+      {
+        "date": "114-07-11",
+        "open": 65.1,
+        "high": 66.0,
+        "low": 62.7,
+        "close": 62.7,
+        "volume": 682180,
+        "turnover": 43723316,
+        "change": 0.0,
+        "transaction": 1004
+      },
+      {
+        "date": "114-07-14",
+        "open": 62.8,
+        "high": 63.0,
+        "low": 61.7,
+        "close": 62.5,
+        "volume": 164064,
+        "turnover": 10260099,
+        "change": -0.2,
+        "transaction": 228
       }
     ],
     "kline_last_update": "2025-07-14 01:16:17"
@@ -23345,6 +23961,39 @@
         "turnover": 6323103811,
         "change": 55.0,
         "transaction": 7125
+      },
+      {
+        "date": "114-07-10",
+        "open": 922.0,
+        "high": 927.0,
+        "low": 900.0,
+        "close": 911.0,
+        "volume": 4583064,
+        "turnover": 4188072236,
+        "change": -23.0,
+        "transaction": 6363
+      },
+      {
+        "date": "114-07-11",
+        "open": 911.0,
+        "high": 919.0,
+        "low": 888.0,
+        "close": 896.0,
+        "volume": 4225107,
+        "turnover": 3804229796,
+        "change": -15.0,
+        "transaction": 5226
+      },
+      {
+        "date": "114-07-14",
+        "open": 905.0,
+        "high": 914.0,
+        "low": 872.0,
+        "close": 874.0,
+        "volume": 3303602,
+        "turnover": 2932901774,
+        "change": -22.0,
+        "transaction": 4427
       }
     ],
     "kline_last_update": "2025-07-14 01:16:25"
@@ -24718,6 +25367,28 @@
         "turnover": 206014485,
         "change": 2.55,
         "transaction": 6092
+      },
+      {
+        "date": "114-07-11",
+        "open": 28.5,
+        "high": 29.9,
+        "low": 27.75,
+        "close": 28.3,
+        "volume": 16031792,
+        "turnover": 462307715,
+        "change": 0.2,
+        "transaction": 9473
+      },
+      {
+        "date": "114-07-14",
+        "open": 28.25,
+        "high": 28.3,
+        "low": 26.95,
+        "close": 27.15,
+        "volume": 4398495,
+        "turnover": 121102456,
+        "change": -1.15,
+        "transaction": 2484
       }
     ],
     "kline_last_update": "2025-07-14 01:16:34"
@@ -25068,6 +25739,28 @@
         "turnover": 1697546179,
         "change": 44.0,
         "transaction": 5897
+      },
+      {
+        "date": "114-07-11",
+        "open": 473.0,
+        "high": 485.0,
+        "low": 471.0,
+        "close": 477.0,
+        "volume": 1782887,
+        "turnover": 851318780,
+        "change": 0.0,
+        "transaction": 5506
+      },
+      {
+        "date": "114-07-14",
+        "open": 473.0,
+        "high": 473.0,
+        "low": 452.0,
+        "close": 455.0,
+        "volume": 1190630,
+        "turnover": 548110079,
+        "change": -22.0,
+        "transaction": 10227
       }
     ],
     "kline_last_update": "2025-07-14 01:16:42"
@@ -26441,6 +27134,28 @@
         "turnover": 11073098404,
         "change": 31.5,
         "transaction": 25428
+      },
+      {
+        "date": "114-07-11",
+        "open": 471.0,
+        "high": 491.5,
+        "low": 471.0,
+        "close": 483.0,
+        "volume": 13782938,
+        "turnover": 6651262545,
+        "change": 0.5,
+        "transaction": 14645
+      },
+      {
+        "date": "114-07-14",
+        "open": 478.5,
+        "high": 482.5,
+        "low": 472.5,
+        "close": 473.0,
+        "volume": 7066369,
+        "turnover": 3363585426,
+        "change": -10.0,
+        "transaction": 9545
       }
     ],
     "kline_last_update": "2025-07-14 01:16:50"
@@ -27814,6 +28529,28 @@
         "turnover": 2895634817,
         "change": 3.9,
         "transaction": 33173
+      },
+      {
+        "date": "114-07-11",
+        "open": 52.8,
+        "high": 53.8,
+        "low": 52.1,
+        "close": 52.8,
+        "volume": 16752618,
+        "turnover": 888386098,
+        "change": -0.6,
+        "transaction": 12396
+      },
+      {
+        "date": "114-07-14",
+        "open": 52.4,
+        "high": 53.5,
+        "low": 51.0,
+        "close": 51.6,
+        "volume": 10719170,
+        "turnover": 553070556,
+        "change": -1.2,
+        "transaction": 6737
       }
     ],
     "kline_last_update": "2025-07-14 01:16:58"
@@ -29187,6 +29924,28 @@
         "turnover": 807212174,
         "change": 7.8,
         "transaction": 10447
+      },
+      {
+        "date": "114-07-11",
+        "open": 86.7,
+        "high": 94.0,
+        "low": 86.5,
+        "close": 90.3,
+        "volume": 15505178,
+        "turnover": 1396291724,
+        "change": 4.1,
+        "transaction": 12384
+      },
+      {
+        "date": "114-07-14",
+        "open": 89.5,
+        "high": 99.3,
+        "low": 89.4,
+        "close": 99.3,
+        "volume": 9603799,
+        "turnover": 919122911,
+        "change": 9.0,
+        "transaction": 6758
       }
     ],
     "kline_last_update": "2025-07-14 01:17:06"
@@ -30560,6 +31319,28 @@
         "turnover": 48818166,
         "change": 20.5,
         "transaction": 205
+      },
+      {
+        "date": "114-07-11",
+        "open": 233.0,
+        "high": 240.5,
+        "low": 230.0,
+        "close": 240.5,
+        "volume": 885817,
+        "turnover": 209930447,
+        "change": 0.0,
+        "transaction": 630
+      },
+      {
+        "date": "114-07-14",
+        "open": 264.5,
+        "high": 264.5,
+        "low": 242.0,
+        "close": 242.0,
+        "volume": 2274350,
+        "turnover": 580816434,
+        "change": 1.5,
+        "transaction": 2641
       }
     ],
     "kline_last_update": "2025-07-14 01:17:16"
@@ -31933,6 +32714,28 @@
         "turnover": 32952916,
         "change": 4.55,
         "transaction": 2299
+      },
+      {
+        "date": "114-07-11",
+        "open": 52.2,
+        "high": 53.6,
+        "low": 50.4,
+        "close": 53.0,
+        "volume": 757872,
+        "turnover": 39360538,
+        "change": 2.4,
+        "transaction": 764
+      },
+      {
+        "date": "114-07-14",
+        "open": 53.0,
+        "high": 53.7,
+        "low": 51.8,
+        "close": 51.8,
+        "volume": 253300,
+        "turnover": 13300859,
+        "change": -1.2,
+        "transaction": 383
       }
     ],
     "kline_last_update": "2025-07-14 01:17:24"
@@ -33306,6 +34109,28 @@
         "turnover": 9974177,
         "change": 2.75,
         "transaction": 205
+      },
+      {
+        "date": "114-07-11",
+        "open": 31.3,
+        "high": 33.0,
+        "low": 30.85,
+        "close": 31.05,
+        "volume": 2063029,
+        "turnover": 66123114,
+        "change": 0.4,
+        "transaction": 1492
+      },
+      {
+        "date": "114-07-14",
+        "open": 31.35,
+        "high": 34.15,
+        "low": 31.1,
+        "close": 34.15,
+        "volume": 2157151,
+        "turnover": 72735478,
+        "change": 3.1,
+        "transaction": 1123
       }
     ],
     "kline_last_update": "2025-07-14 01:17:32"
@@ -34679,6 +35504,28 @@
         "turnover": 1613436,
         "change": 1.3,
         "transaction": 95
+      },
+      {
+        "date": "114-07-11",
+        "open": 14.7,
+        "high": 15.2,
+        "low": 14.1,
+        "close": 14.5,
+        "volume": 95505,
+        "turnover": 1402145,
+        "change": -0.2,
+        "transaction": 88
+      },
+      {
+        "date": "114-07-14",
+        "open": 14.3,
+        "high": 14.5,
+        "low": 14.0,
+        "close": 14.1,
+        "volume": 23015,
+        "turnover": 328099,
+        "change": -0.4,
+        "transaction": 16
       }
     ],
     "kline_last_update": "2025-07-14 01:17:41"
@@ -36052,6 +36899,28 @@
         "turnover": 802512931,
         "change": 23.5,
         "transaction": 3794
+      },
+      {
+        "date": "114-07-11",
+        "open": 281.0,
+        "high": 281.0,
+        "low": 273.0,
+        "close": 273.5,
+        "volume": 1410105,
+        "turnover": 391441720,
+        "change": -9.0,
+        "transaction": 5571
+      },
+      {
+        "date": "114-07-14",
+        "open": 273.0,
+        "high": 291.5,
+        "low": 270.0,
+        "close": 290.0,
+        "volume": 3040555,
+        "turnover": 867443010,
+        "change": 16.5,
+        "transaction": 3121
       }
     ],
     "kline_last_update": "2025-07-14 01:17:49"
@@ -37425,6 +38294,28 @@
         "turnover": 3394503519,
         "change": 59.0,
         "transaction": 10253
+      },
+      {
+        "date": "114-07-11",
+        "open": 840.0,
+        "high": 855.0,
+        "low": 832.0,
+        "close": 833.0,
+        "volume": 1447197,
+        "turnover": 1218260536,
+        "change": -11.0,
+        "transaction": 9642
+      },
+      {
+        "date": "114-07-14",
+        "open": 831.0,
+        "high": 834.0,
+        "low": 813.0,
+        "close": 814.0,
+        "volume": 868209,
+        "turnover": 711905296,
+        "change": -19.0,
+        "transaction": 4771
       }
     ],
     "kline_last_update": "2025-07-14 01:17:57"
@@ -37643,6 +38534,28 @@
         "turnover": 135772503,
         "change": 17.0,
         "transaction": 2116
+      },
+      {
+        "date": "114-07-11",
+        "open": 228.0,
+        "high": 259.0,
+        "low": 220.5,
+        "close": 240.0,
+        "volume": 739064,
+        "turnover": 175247795,
+        "change": -5.0,
+        "transaction": 1852
+      },
+      {
+        "date": "114-07-14",
+        "open": 245.5,
+        "high": 248.0,
+        "low": 239.0,
+        "close": 239.5,
+        "volume": 213384,
+        "turnover": 51677173,
+        "change": -0.5,
+        "transaction": 903
       }
     ],
     "kline_last_update": "2025-07-14 01:18:05"
@@ -39016,6 +39929,28 @@
         "turnover": 3132011690,
         "change": 130.0,
         "transaction": 3478
+      },
+      {
+        "date": "114-07-11",
+        "open": 1960.0,
+        "high": 2030.0,
+        "low": 1950.0,
+        "close": 2000.0,
+        "volume": 1362765,
+        "turnover": 2723033785,
+        "change": 40.0,
+        "transaction": 2475
+      },
+      {
+        "date": "114-07-14",
+        "open": 1995.0,
+        "high": 2000.0,
+        "low": 1880.0,
+        "close": 1895.0,
+        "volume": 909614,
+        "turnover": 1747982545,
+        "change": -105.0,
+        "transaction": 2583
       }
     ],
     "kline_last_update": "2025-07-14 01:18:13"
@@ -40389,6 +41324,28 @@
         "turnover": 371954368,
         "change": 9.0,
         "transaction": 2089
+      },
+      {
+        "date": "114-07-11",
+        "open": 152.0,
+        "high": 153.5,
+        "low": 149.0,
+        "close": 152.0,
+        "volume": 2342770,
+        "turnover": 355177168,
+        "change": 1.0,
+        "transaction": 2191
+      },
+      {
+        "date": "114-07-14",
+        "open": 150.5,
+        "high": 152.5,
+        "low": 146.0,
+        "close": 146.0,
+        "volume": 1187105,
+        "turnover": 177135301,
+        "change": -6.0,
+        "transaction": 1348
       }
     ],
     "kline_last_update": "2025-07-14 01:18:22"
@@ -41773,6 +42730,17 @@
         "turnover": 64664786,
         "change": 2.2,
         "transaction": 960
+      },
+      {
+        "date": "114-07-14",
+        "open": 24.8,
+        "high": 25.1,
+        "low": 23.2,
+        "close": 23.2,
+        "volume": 8143962,
+        "turnover": 198259363,
+        "change": -1.1,
+        "transaction": 4671
       }
     ],
     "kline_last_update": "2025-07-14 01:18:30"
@@ -43157,6 +44125,17 @@
         "turnover": 11252559844,
         "change": 8.5,
         "transaction": 47401
+      },
+      {
+        "date": "114-07-14",
+        "open": 152.0,
+        "high": 155.5,
+        "low": 149.5,
+        "close": 154.0,
+        "volume": 50866017,
+        "turnover": 7756038395,
+        "change": 5.0,
+        "transaction": 31457
       }
     ],
     "kline_last_update": "2025-07-14 01:18:38"
@@ -44541,6 +45520,17 @@
         "turnover": 10957078,
         "change": 1.95,
         "transaction": 568
+      },
+      {
+        "date": "114-07-14",
+        "open": 21.1,
+        "high": 21.8,
+        "low": 21.1,
+        "close": 21.2,
+        "volume": 389915,
+        "turnover": 8316189,
+        "change": -0.4,
+        "transaction": 379
       }
     ],
     "kline_last_update": "2025-07-14 01:18:46"
@@ -45925,6 +46915,17 @@
         "turnover": 3327704473,
         "change": 5.0,
         "transaction": 29290
+      },
+      {
+        "date": "114-07-14",
+        "open": 63.0,
+        "high": 63.6,
+        "low": 61.0,
+        "close": 61.0,
+        "volume": 50200736,
+        "turnover": 3129006450,
+        "change": -1.3,
+        "transaction": 28667
       }
     ],
     "kline_last_update": "2025-07-14 01:18:54"
@@ -47309,6 +48310,17 @@
         "turnover": 13217946,
         "change": 13.0,
         "transaction": 123
+      },
+      {
+        "date": "114-07-14",
+        "open": 161.5,
+        "high": 161.5,
+        "low": 161.5,
+        "close": 161.5,
+        "volume": 359474,
+        "turnover": 58055038,
+        "change": 14.5,
+        "transaction": 334
       }
     ],
     "kline_last_update": "2025-07-14 01:19:02"
@@ -48693,6 +49705,17 @@
         "turnover": 3281135286,
         "change": 19.5,
         "transaction": 12665
+      },
+      {
+        "date": "114-07-14",
+        "open": 327.0,
+        "high": 327.5,
+        "low": 317.0,
+        "close": 324.5,
+        "volume": 4837805,
+        "turnover": 1561134782,
+        "change": 0.5,
+        "transaction": 13360
       }
     ],
     "kline_last_update": "2025-07-14 01:19:10"
@@ -50077,6 +51100,17 @@
         "turnover": 17953410,
         "change": 1.2,
         "transaction": 662
+      },
+      {
+        "date": "114-07-14",
+        "open": 13.5,
+        "high": 14.5,
+        "low": 13.5,
+        "close": 13.6,
+        "volume": 6761131,
+        "turnover": 95155923,
+        "change": 0.4,
+        "transaction": 3788
       }
     ],
     "kline_last_update": "2025-07-14 01:19:21"
@@ -51461,6 +52495,17 @@
         "turnover": 91886328,
         "change": 1.0,
         "transaction": 4016
+      },
+      {
+        "date": "114-07-14",
+        "open": 11.35,
+        "high": 12.0,
+        "low": 11.05,
+        "close": 11.2,
+        "volume": 18297650,
+        "turnover": 210021869,
+        "change": 0.2,
+        "transaction": 5529
       }
     ],
     "kline_last_update": "2025-07-14 01:19:29"
@@ -52845,6 +53890,17 @@
         "turnover": 259985312,
         "change": 6.1,
         "transaction": 4671
+      },
+      {
+        "date": "114-07-14",
+        "open": 68.9,
+        "high": 69.5,
+        "low": 65.4,
+        "close": 65.6,
+        "volume": 7082504,
+        "turnover": 474754700,
+        "change": -1.5,
+        "transaction": 5318
       }
     ],
     "kline_last_update": "2025-07-14 01:19:37"
@@ -54229,6 +55285,17 @@
         "turnover": 229099321,
         "change": 4.6,
         "transaction": 2428
+      },
+      {
+        "date": "114-07-14",
+        "open": 51.9,
+        "high": 52.9,
+        "low": 50.5,
+        "close": 50.5,
+        "volume": 11596959,
+        "turnover": 600719766,
+        "change": -0.2,
+        "transaction": 7825
       }
     ],
     "kline_last_update": "2025-07-14 01:19:45"
@@ -55613,6 +56680,17 @@
         "turnover": 1734860313,
         "change": 18.5,
         "transaction": 16321
+      },
+      {
+        "date": "114-07-14",
+        "open": 203.0,
+        "high": 206.0,
+        "low": 199.0,
+        "close": 199.5,
+        "volume": 6004205,
+        "turnover": 1217841320,
+        "change": -4.5,
+        "transaction": 7837
       }
     ],
     "kline_last_update": "2025-07-14 01:19:53"
@@ -56997,6 +58075,17 @@
         "turnover": 283994895,
         "change": 7.7,
         "transaction": 1849
+      },
+      {
+        "date": "114-07-14",
+        "open": 86.0,
+        "high": 92.9,
+        "low": 86.0,
+        "close": 90.0,
+        "volume": 14753571,
+        "turnover": 1325234242,
+        "change": 4.9,
+        "transaction": 11435
       }
     ],
     "kline_last_update": "2025-07-14 01:20:01"
@@ -58381,6 +59470,17 @@
         "turnover": 771953473,
         "change": 5.5,
         "transaction": 6086
+      },
+      {
+        "date": "114-07-14",
+        "open": 62.0,
+        "high": 63.9,
+        "low": 61.0,
+        "close": 63.9,
+        "volume": 56365836,
+        "turnover": 3506922225,
+        "change": 3.0,
+        "transaction": 32661
       }
     ],
     "kline_last_update": "2025-07-14 01:20:10"
@@ -59765,6 +60865,17 @@
         "turnover": 187024020,
         "change": 4.15,
         "transaction": 2459
+      },
+      {
+        "date": "114-07-14",
+        "open": 46.9,
+        "high": 47.9,
+        "low": 45.0,
+        "close": 45.0,
+        "volume": 8854208,
+        "turnover": 409044946,
+        "change": -1.1,
+        "transaction": 6056
       }
     ],
     "kline_last_update": "2025-07-14 01:20:18"
@@ -61149,6 +62260,17 @@
         "turnover": 25373985,
         "change": 1.5,
         "transaction": 3963
+      },
+      {
+        "date": "114-07-14",
+        "open": 16.85,
+        "high": 17.35,
+        "low": 16.5,
+        "close": 16.85,
+        "volume": 1412516,
+        "turnover": 23957205,
+        "change": 0.0,
+        "transaction": 967
       }
     ],
     "kline_last_update": "2025-07-14 01:20:27"
@@ -62533,6 +63655,17 @@
         "turnover": 5675871,
         "change": 0.96,
         "transaction": 304
+      },
+      {
+        "date": "114-07-14",
+        "open": 11.1,
+        "high": 11.25,
+        "low": 10.7,
+        "close": 10.7,
+        "volume": 640553,
+        "turnover": 7007465,
+        "change": -0.25,
+        "transaction": 407
       }
     ],
     "kline_last_update": "2025-07-14 01:20:35"
@@ -63917,6 +65050,17 @@
         "turnover": 4073889,
         "change": 1.15,
         "transaction": 225
+      },
+      {
+        "date": "114-07-14",
+        "open": 13.75,
+        "high": 13.8,
+        "low": 13.35,
+        "close": 13.55,
+        "volume": 58800,
+        "turnover": 796152,
+        "change": -0.4,
+        "transaction": 71
       }
     ],
     "kline_last_update": "2025-07-14 01:20:43"
@@ -65301,6 +66445,17 @@
         "turnover": 113201837,
         "change": 7.6,
         "transaction": 981
+      },
+      {
+        "date": "114-07-14",
+        "open": 99.0,
+        "high": 103.0,
+        "low": 96.5,
+        "close": 102.0,
+        "volume": 2859716,
+        "turnover": 285419734,
+        "change": 4.0,
+        "transaction": 3615
       }
     ],
     "kline_last_update": "2025-07-14 01:20:51"
@@ -66685,6 +67840,17 @@
         "turnover": 12409898289,
         "change": 1.4,
         "transaction": 55535
+      },
+      {
+        "date": "114-07-14",
+        "open": 17.85,
+        "high": 18.6,
+        "low": 17.6,
+        "close": 18.6,
+        "volume": 199973520,
+        "turnover": 3646646481,
+        "change": 0.3,
+        "transaction": 38592
       }
     ],
     "kline_last_update": "2025-07-14 01:20:59"
@@ -68069,6 +69235,17 @@
         "turnover": 129743613,
         "change": 3.6,
         "transaction": 2302
+      },
+      {
+        "date": "114-07-14",
+        "open": 47.7,
+        "high": 47.9,
+        "low": 46.15,
+        "close": 46.3,
+        "volume": 1224550,
+        "turnover": 57600752,
+        "change": -1.0,
+        "transaction": 1649
       }
     ],
     "kline_last_update": "2025-07-14 01:21:07"
@@ -69453,6 +70630,17 @@
         "turnover": 186340908,
         "change": 11.0,
         "transaction": 1505
+      },
+      {
+        "date": "114-07-14",
+        "open": 169.5,
+        "high": 172.5,
+        "low": 165.5,
+        "close": 165.5,
+        "volume": 559679,
+        "turnover": 94379821,
+        "change": -4.0,
+        "transaction": 850
       }
     ],
     "kline_last_update": "2025-07-14 01:21:15"
@@ -70837,6 +72025,17 @@
         "turnover": 316511379,
         "change": 4.1,
         "transaction": 4071
+      },
+      {
+        "date": "114-07-14",
+        "open": 65.0,
+        "high": 66.0,
+        "low": 63.3,
+        "close": 63.3,
+        "volume": 4316821,
+        "turnover": 278310633,
+        "change": -1.1,
+        "transaction": 3109
       }
     ],
     "kline_last_update": "2025-07-14 01:21:24"
@@ -72089,6 +73288,17 @@
         "turnover": 504500,
         "change": 1.2,
         "transaction": 17
+      },
+      {
+        "date": "114-07-14",
+        "open": 18.85,
+        "high": 18.85,
+        "low": 18.0,
+        "close": 18.0,
+        "volume": 12247,
+        "turnover": 224614,
+        "change": -0.85,
+        "transaction": 12
       }
     ],
     "kline_last_update": "2025-07-14 01:21:32"
@@ -73473,6 +74683,17 @@
         "turnover": 808876713,
         "change": 36.0,
         "transaction": 2956
+      },
+      {
+        "date": "114-07-14",
+        "open": 577.0,
+        "high": 577.0,
+        "low": 539.0,
+        "close": 551.0,
+        "volume": 921625,
+        "turnover": 514065503,
+        "change": -29.0,
+        "transaction": 2235
       }
     ],
     "kline_last_update": "2025-07-14 01:21:40"
@@ -74857,6 +76078,17 @@
         "turnover": 23481321,
         "change": 0.75,
         "transaction": 972
+      },
+      {
+        "date": "114-07-14",
+        "open": 12.4,
+        "high": 12.45,
+        "low": 11.9,
+        "close": 11.95,
+        "volume": 931196,
+        "turnover": 11258948,
+        "change": -0.45,
+        "transaction": 554
       }
     ],
     "kline_last_update": "2025-07-14 01:21:48"
@@ -76241,6 +77473,17 @@
         "turnover": 12426359,
         "change": 1.65,
         "transaction": 398
+      },
+      {
+        "date": "114-07-14",
+        "open": 27.6,
+        "high": 27.95,
+        "low": 27.4,
+        "close": 27.6,
+        "volume": 77807,
+        "turnover": 2151630,
+        "change": -0.15,
+        "transaction": 226
       }
     ],
     "kline_last_update": "2025-07-14 01:21:56"
@@ -77625,6 +78868,17 @@
         "turnover": 13587580,
         "change": 4.8,
         "transaction": 143
+      },
+      {
+        "date": "114-07-14",
+        "open": 81.0,
+        "high": 81.0,
+        "low": 77.6,
+        "close": 77.6,
+        "volume": 158968,
+        "turnover": 12487830,
+        "change": -3.7,
+        "transaction": 223
       }
     ],
     "kline_last_update": "2025-07-14 01:22:04"
@@ -79009,6 +80263,17 @@
         "turnover": 339518318,
         "change": 4.6,
         "transaction": 3270
+      },
+      {
+        "date": "114-07-14",
+        "open": 77.8,
+        "high": 77.8,
+        "low": 75.2,
+        "close": 75.4,
+        "volume": 2414227,
+        "turnover": 184184292,
+        "change": -2.7,
+        "transaction": 1956
       }
     ],
     "kline_last_update": "2025-07-14 01:22:12"
@@ -80393,6 +81658,17 @@
         "turnover": 509877548,
         "change": 5.5,
         "transaction": 4456
+      },
+      {
+        "date": "114-07-14",
+        "open": 95.4,
+        "high": 96.0,
+        "low": 94.5,
+        "close": 95.4,
+        "volume": 1216119,
+        "turnover": 115565877,
+        "change": -1.1,
+        "transaction": 1536
       }
     ],
     "kline_last_update": "2025-07-14 01:22:20"

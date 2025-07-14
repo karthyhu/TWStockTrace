@@ -213,12 +213,13 @@ class TraceManager:
         try:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=months * 30)
+            # print(f"📅 從 {start_date.strftime('%Y-%m-%d')} 到 {end_date.strftime('%Y-%m-%d')} 獲取 {stock_code} 的 K 線資料...")
             
             url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY"
             stock_data = []
             
             current_date = start_date
-            while current_date <= end_date:
+            while current_date.month <= end_date.month:
                 year = current_date.year
                 month = current_date.month
                 
@@ -227,6 +228,7 @@ class TraceManager:
                     'date': f'{year}{month:02d}01',
                     'stockNo': stock_code,
                 }
+                print(f"📡 正在請求 {stock_code} {year}-{month:02d} 的資料...")
                 
                 response = requests.get(url, params=params)
                 
