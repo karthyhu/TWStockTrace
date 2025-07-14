@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股追蹤系統</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .header h1 {
+            color: #333;
+            margin: 0;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .date-selector {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            background: white;
+            min-width: 150px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .chart-wrapper {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #d32f2f;
+            font-size: 18px;
+        }
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>台股追蹤系統</h1>
+        </div>
+        
+        <div class="controls">
+            <label for="dateSelect">選擇日期：</label>
+            <select id="dateSelect" class="date-selector">
+                <option value="">載入中...</option>
+            </select>
+            <button class="btn" onclick="loadStockData()">更新數據</button>
+        </div>
+        
+        <div id="stats" class="stats"></div>
+        
+        <div id="loading" class="loading">載入中...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="chartsContainer" class="charts-container" style="display: none;">
+            <!-- 圖表將在這裡動態生成 -->
+        </div>
+    </div>
+
+    <script>
+        let stockData = [];
+        let availableDates = [];
+        let currentDate = '';
+
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTraceData();
+        });
+
+        // 載入 trace.json 數據
+        async function loadTraceData() {
+            try {
+                const response = await fetch('../raw_stock_data/trace.json');
+                if (!response.ok) {
+                    throw new Error('無法載入數據');
+                }
+                stockData = await response.json();
+                
+                // 提取所有可用日期
+                extractAvailableDates();
+                
+                // 設置日期選擇器
+                setupDateSelector();
+                
+                // 載入最後一天的數據
+                loadLatestData();
+                
+            } catch (error) {
+                showError('載入數據失敗：' + error.message);
+            }
+        }
+
+        // 提取可用日期
+        function extractAvailableDates() {
+            const dateSet = new Set();
+            stockData.forEach(stock => {
+                if (stock.Trigger_History) {
+                    const dates = stock.Trigger_History.split(',');
+                    dates.forEach(date => dateSet.add(date.trim()));
+                }
+            });
+            availableDates = Array.from(dateSet).sort((a, b) => b.localeCompare(a));
+        }
+
+        // 設置日期選擇器
+        function setupDateSelector() {
+            const dateSelect = document.getElementById('dateSelect');
+            dateSelect.innerHTML = '';
+            
+            availableDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = formatDate(date);
+                dateSelect.appendChild(option);
+            });
+            
+            // 預設選擇最新日期
+            if (availableDates.length > 0) {
+                dateSelect.value = availableDates[0];
+                currentDate = availableDates[0];
+            }
+        }
+
+        // 格式化日期顯示
+        function formatDate(dateStr) {
+            if (dateStr.length === 7) {
+                const year = parseInt(dateStr.substring(0, 3)) + 1911;
+                const month = dateStr.substring(3, 5);
+                const day = dateStr.substring(5, 7);
+                return `${year}/${month}/${day}`;
+            }
+            return dateStr;
+        }
+
+        // 載入最新數據
+        function loadLatestData() {
+            if (availableDates.length > 0) {
+                currentDate = availableDates[0];
+                displayStockData(currentDate);
+            }
+        }
+
+        // 載入股票數據
+        function loadStockData() {
+            const selectedDate = document.getElementById('dateSelect').value;
+            if (selectedDate) {
+                currentDate = selectedDate;
+                displayStockData(currentDate);
+            }
+        }
+
+        // 顯示股票數據
+        function displayStockData(date) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('chartsContainer').style.display = 'none';
+
+            try {
+                // 過濾當日觸發的股票
+                const dailyStocks = stockData.filter(stock => 
+                    stock.Trigger_Date === date && 
+                    stock.kline_data && 
+                    stock.kline_data.length > 0
+                );
+
+                if (dailyStocks.length === 0) {
+                    showError(`${formatDate(date)} 沒有找到股票數據`);
+                    return;
+                }
+
+                // 顯示統計信息
+                displayStats(dailyStocks, date);
+
+                // 生成圖表
+                generateCharts(dailyStocks);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('chartsContainer').style.display = 'block';
+
+            } catch (error) {
+                showError('顯示數據時發生錯誤：' + error.message);
+            }
+        }
+
+        // 顯示統計信息
+        function displayStats(stocks, date) {
+            const statsContainer = document.getElementById('stats');
+            
+            const totalVolume = stocks.reduce((sum, stock) => {
+                return sum + stock.kline_data.reduce((stockSum, data) => stockSum + (data.volume || 0), 0);
+            }, 0);
+
+            const avgVolume = Math.round(totalVolume / stocks.length);
+            const maxVolume = Math.max(...stocks.map(stock => 
+                Math.max(...stock.kline_data.map(data => data.volume || 0))
+            ));
+
+            // 計算最新收盤價統計
+            const latestPrices = stocks.map(stock => {
+                const latestData = stock.kline_data[stock.kline_data.length - 1];
+                return latestData ? latestData.close : 0;
+            }).filter(price => price > 0);
+
+            const avgPrice = latestPrices.length > 0 ? 
+                (latestPrices.reduce((sum, price) => sum + price, 0) / latestPrices.length).toFixed(2) : 0;
+
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <h3>追蹤日期</h3>
+                    <div class="value">${formatDate(date)}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>股票數量</h3>
+                    <div class="value">${stocks.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>總成交量</h3>
+                    <div class="value">${totalVolume.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>平均股價</h3>
+                    <div class="value">$${avgPrice}</div>
+                </div>
+            `;
+        }
+
+        // 生成圖表
+        function generateCharts(stocks) {
+            const container = document.getElementById('chartsContainer');
+            container.innerHTML = '';
+
+            stocks.forEach((stock, index) => {
+                createStockChart(stock, index);
+            });
+        }
+
+        // 創建單一股票圖表
+        function createStockChart(stock, index) {
+            const container = document.getElementById('chartsContainer');
+            
+            const chartWrapper = document.createElement('div');
+            chartWrapper.className = 'chart-wrapper';
+            chartWrapper.innerHTML = `
+                <div class="chart-title">${stock.Name} (${stock.Code}) - K線圖與成交量</div>
+                <div id="chart-${index}" style="width: 100%; height: 600px;"></div>
+            `;
+            container.appendChild(chartWrapper);
+
+            // 準備數據
+            const dates = stock.kline_data.map(data => data.date || '');
+            const opens = stock.kline_data.map(data => data.open || 0);
+            const highs = stock.kline_data.map(data => data.high || 0);
+            const lows = stock.kline_data.map(data => data.low || 0);
+            const closes = stock.kline_data.map(data => data.close || 0);
+            const volumes = stock.kline_data.map(data => data.volume || 0);
+
+            // 創建蠟燭圖
+            const candlestickTrace = {
+                x: dates,
+                open: opens,
+                high: highs,
+                low: lows,
+                close: closes,
+                type: 'candlestick',
+                name: 'K線',
+                yaxis: 'y',
+                increasing: {
+                    line: { color: '#FF4444', width: 1 },
+                    fillcolor: '#FF4444'
+                },
+                decreasing: {
+                    line: { color: '#00AA00', width: 1 },
+                    fillcolor: '#00AA00'
+                },
+                hovertemplate: 
+                    '<b>%{x}</b><br>' +
+                    '開盤: %{open}<br>' +
+                    '最高: %{high}<br>' +
+                    '最低: %{low}<br>' +
+                    '收盤: %{close}<br>' +
+                    '<extra></extra>'
+            };
+
+            // 創建成交量條狀圖
+            const volumeTrace = {
+                x: dates,
+                y: volumes,
+                type: 'bar',
+                name: '成交量',
+                yaxis: 'y2',
+                marker: {
+                    color: volumes.map((vol, i) => {
+                        if (i === 0) return '#888888';
+                        return closes[i] >= closes[i-1] ? '#FF4444' : '#00AA00';
+                    }),
+                    opacity: 0.7
+                },
+                hovertemplate: 
+                    '<b>%{x}</b><br>' +
+                    '成交量: %{y:,.0f}<br>' +
+                    '<extra></extra>'
+            };
+
+            const layout = {
+                title: {
+                    text: `${stock.Name} (${stock.Code})`,
+                    font: { size: 18, color: '#333' }
+                },
+                xaxis: {
+                    title: '日期',
+                    showgrid: true,
+                    gridcolor: '#e0e0e0',
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    title: '股價',
+                    domain: [0.3, 1],
+                    showgrid: true,
+                    gridcolor: '#e0e0e0',
+                    side: 'left'
+                },
+                yaxis2: {
+                    title: '成交量',
+                    domain: [0, 0.25],
+                    showgrid: false,
+                    side: 'right',
+                    overlaying: 'y',
+                    anchor: 'x'
+                },
+                plot_bgcolor: '#fafafa',
+                paper_bgcolor: 'white',
+                margin: { l: 80, r: 80, t: 80, b: 60 },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1,
+                    bgcolor: 'rgba(255,255,255,0.8)',
+                    bordercolor: '#ccc',
+                    borderwidth: 1
+                }
+            };
+
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                displaylogo: false
+            };
+
+            Plotly.newPlot(`chart-${index}`, [candlestickTrace, volumeTrace], layout, config);
+        }
+
+        // 顯示錯誤信息
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('chartsContainer').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = message;
+        }
+
+        // 監聽日期選擇變化
+        document.getElementById('dateSelect').addEventListener('change', function() {
+            loadStockData();
+        });
+    </script>
+</body>
+</html>

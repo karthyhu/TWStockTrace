@@ -2,6 +2,8 @@ import requests
 import json
 import os
 import calstockgan
+import trace_manager
+import heatmap_discord
 
 def check_and_delete_old_files(directory, max_files=30):
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -14,8 +16,15 @@ def DownlodStockData():
     url = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL'  
     res = requests.get(url)
     jsondata = json.loads(res.text)
+    
+    # 儲存當日資料
     with open(f'./raw_stock_data/daily/{jsondata[0]["Date"]}.json', 'w', encoding='utf-8') as f:
         json.dump(jsondata, f, ensure_ascii=False, indent=0)
+    
+    # 同時儲存為 today.json 供其他模組使用
+    with open('./raw_stock_data/daily/today.json', 'w', encoding='utf-8') as f:
+        json.dump(jsondata, f, ensure_ascii=False, indent=0)
+    
     filename = f'{jsondata[0]["Date"]}.json'
     return filename
 
@@ -102,5 +111,27 @@ if __name__ == "__main__":
     check_and_delete_old_files('./raw_stock_data/daily')
     filename = DownlodStockData()
     calstockgan.gan_range(filename)
+    
+    # 更新 trace.json
+    print("\n" + "="*50)
+    print("📊 開始更新股票追蹤資料...")
+    trace_manager.update_trace_json(filename)
+    print("="*50 + "\n")
+    
     send_discord_notification()
+    
+    # 發送產業熱力圖通知
+    print("\n" + "="*50)
+    print("🔥 開始發送產業熱力圖...")
+    
+    # # 先發送treemap版本
+    # print("📊 發送Treemap熱力圖...")
+    # heatmap_discord.send_heatmap_to_discord(send_image=True, use_treemap=True)
+    
+    # 也可選擇發送傳統圖表版本
+    print("📈 發送傳統圖表...")
+    heatmap_discord.send_heatmap_to_discord(send_image=True, use_treemap=False)
+    
+    print("="*50 + "\n")
+    
     print("Update completed.")
