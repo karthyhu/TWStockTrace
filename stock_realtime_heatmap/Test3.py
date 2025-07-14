@@ -20,14 +20,24 @@ def send_discord_category_notification(treemap_df):
             print("Discord webhook URL not found. Skipping notification.")
             return
         # 計算各類別平均漲跌幅與數量
-        category_stats = treemap_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(1)
+        category_stats = treemap_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(2)
         category_stats = category_stats.sort_values('mean', ascending=False)
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed = {"title": f"📊 台股產業類股漲跌幅 - {current_time}", "color": 0x00ff00, "fields": []}
         text = ""
         for cat, row in category_stats.iterrows():
             mean = row['mean']; cnt = int(row['count'])
-            emoji = "🔴" if mean > 0 else "🟢" if mean < 0 else "🟡"
+            if mean > 7:
+                emoji = "🚀"  # 群組漲7%以上
+            elif mean >= 3:
+                emoji = "🔼"  # 群組漲3%以上
+            elif mean < -7:
+                emoji = "💥"  # 群組跌7%以上
+            elif mean < -3:
+                emoji = "🔽"  # 群組跌3%以上
+            else:
+                emoji = "⚖️"  # 群組在-3.5~3.5%之間
+            
             text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n"
         embed['fields'].append({"name": "產業類股漲跌幅", "value": text, "inline": False})
         payload = {"embeds": [embed]}
@@ -47,6 +57,8 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
             for company_record in company_json_data_twse:
                 if company_record['公司代號'] == target_code:
                     issue_shares = company_record['已發行普通股數或TDR原股發行股數']
+                else:
+                    issue_shares = 0
             return {
                 'last_close_price': record['ClosingPrice'],
                 'stock_name': record['Name'], #證交所股票顯示名稱
@@ -60,6 +72,8 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
             for company_record in company_json_data_tpex:
                 if company_record['SecuritiesCompanyCode'] == target_code:
                     issue_shares = company_record['IssueShares']
+                else:
+                    issue_shares = 0
             return {
                 'last_close_price': record['Close'],
                 'stock_name': record['CompanyName'], #上櫃股票顯示名稱
@@ -144,6 +158,7 @@ def downlod_stock_data():
 def load_initial_data():
     
     downlod_stock_data()
+    time.sleep(1)
     downlod_stock_company_data()
     
     analysis_json_path = './stock_data.json'
@@ -201,10 +216,8 @@ def load_initial_data():
 # 更新即時股價資料
 def update_realtime_data(stocks_df):
     
-    # track_stock_realtime_data = twstock.realtime.get(list(stocks_df.columns))
     try:
         track_stock_realtime_data = twstock.realtime.get(list(stocks_df.columns))
-        time.sleep(5)
     except (KeyError, ValueError):
         print("部分即時資料缺少 timestamp，略過")
         track_stock_realtime_data = {}
@@ -274,6 +287,12 @@ def update_treemap(n, size_mode):
     for stock_id, row in df_transposed.iterrows():
         # 計算市值
         market_value = row['issue_shares'] * row['realtime_price'] if not pd.isna(row['realtime_price']) else 0
+        # 格式化市值顯示
+        if market_value >= 1e8:
+            market_value_display = f"{int(market_value / 1e8)}e"
+        else:
+            market_value_display = f"{int(market_value / 1e4)}w"
+        
         # 為每個股票的每個類別建立一筆資料
         for category in row['category']:
             treemap_data.append({
@@ -285,7 +304,8 @@ def update_treemap(n, size_mode):
                 'realtime_price': row['realtime_price'],
                 'last_day_price': row['last_day_price'],
                 'stock_type': row['stock_type'],
-                'market_value': market_value
+                'market_cap': market_value_display,  # Display 使用
+                'market_value': market_value  # 保留原始數字值
             })
 
     # 轉換成 DataFrame
@@ -296,10 +316,9 @@ def update_treemap(n, size_mode):
         # send_discord_category_notification(treemap_df)
 
     # 計算族群加總市值
-    category_market_values = treemap_df.groupby('category')['market_value'].transform('sum')
-
+    # category_market_values = treemap_df.groupby('category')['market_value'].transform('sum')
     # 根據市值調整比例
-    treemap_df['proportion'] = treemap_df['market_value'] / category_market_values
+    # treemap_df['proportion'] = treemap_df['market_value'] / category_market_values
 
     # 根據顯示模式決定區塊大小
     if size_mode == 'equal':
@@ -330,15 +349,15 @@ def update_treemap(n, size_mode):
         title='',
         range_color=[-10, 10],
         color_continuous_midpoint=0,
-        hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type', 'market_value'],
+        hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type', 'market_cap'],
         custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
     )
 
-    fig.update_traces(marker=dict(cornerradius=3), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
+    fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
-        margin=dict(t=50, l=10, r=10, b=10),
-        height=800,
+        margin=dict(t=0, l=0, r=0, b=0),
+        height=900,
         coloraxis_colorbar_tickformat='.2f'
     )
 
