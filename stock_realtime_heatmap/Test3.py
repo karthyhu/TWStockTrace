@@ -9,11 +9,16 @@ import datetime
 import requests
 import os
 import time
+import plotly.io as pio
 
 app = dash.Dash(__name__)
 
-def send_discord_category_notification(treemap_df):
+# 將 notified_status 設為全域變數
+notified_status = {}
+
+def send_discord_category_notification(treemap_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
+    global notified_status  # 使用全域變數
     try:
         webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         if not webhook_url:
@@ -25,27 +30,64 @@ def send_discord_category_notification(treemap_df):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed = {"title": f"📊 台股產業類股漲跌幅 - {current_time}", "color": 0x00ff00, "fields": []}
         text = ""
+
         for cat, row in category_stats.iterrows():
-            mean = row['mean']; cnt = int(row['count'])
+            mean = row['mean']
+            cnt = int(row['count'])
+
+            # 判斷是否需要通知
+            if -3 <= mean <= 3:
+                notified_status[cat] = "neutral"  # 設定為中性狀態
+                continue  # 不通知
+
+            # 判斷狀態變化
+            previous_status = notified_status.get(cat, "neutral")
             if mean > 7:
-                emoji = "🚀"  # 群組漲7%以上
+                current_status = "high_positive"
+                emoji = "🚀🚀"
             elif mean >= 3:
-                emoji = "🔼"  # 群組漲3%以上
+                current_status = "positive"
+                emoji = "🚀"
             elif mean < -7:
-                emoji = "💥"  # 群組跌7%以上
+                current_status = "high_negative"
+                emoji = "💥💥"
             elif mean < -3:
-                emoji = "🔽"  # 群組跌3%以上
+                current_status = "negative"
+                emoji = "💥"
             else:
-                emoji = "⚖️"  # 群組在-3.5~3.5%之間
+                current_status = "neutral"
+
+            # 收集族群內的股票及漲幅資訊
+            stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'realtime_change']]
+            stock_info = "\n".join([f"{row['stock_name']} ({row['realtime_change']:+.2f}%)" for _, row in stock_details.iterrows()])
+
+            # 僅在狀態變化時通知
+            if current_status != previous_status:
+                text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n{stock_info}\n"
+                notified_status[cat] = current_status
+
+        if text:
+            embed['fields'].append({"name": "", "value": text, "inline": False})
+            payload = {"embeds": [embed]}
+            resp = requests.post(webhook_url, json=payload)
             
-            text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n"
-        embed['fields'].append({"name": "產業類股漲跌幅", "value": text, "inline": False})
-        payload = {"embeds": [embed]}
-        resp = requests.post(webhook_url, json=payload)
-        if resp.status_code == 204:
-            print("Discord notification sent successfully!")
-        else:
-            print(f"Failed to send Discord notification. Status code: {resp.status_code}")
+            if resp.status_code == 204:
+                print("Discord notification sent successfully!")
+
+                # 發送圖片和文字
+                heatmap_image_path = "heatmap.png"
+                pio.write_image(fig, heatmap_image_path, format="png", width=1920, height=1080)
+
+                with open(heatmap_image_path, "rb") as f:
+                    files = {"file": f}
+                    resp = requests.post(webhook_url, files=files)
+                # if resp.status_code == 204:
+                    # print("Discord notification sent successfully with heatmap image!")
+                # else:
+                    # print(f"Failed to send Discord notification with image. Status code: {resp.status_code}, Response: {resp.text}")
+                
+            else:
+                print(f"Failed to send Discord notification. Status code: {resp.status_code}")
     except Exception as e:
         print(f"Error sending Discord notification: {e}")
 
@@ -54,11 +96,11 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
     # 先搜尋證交所資料
     for record in past_json_data_twse:
         if record['Code'] == target_code:
+            issue_shares = 0
             for company_record in company_json_data_twse:
                 if company_record['公司代號'] == target_code:
                     issue_shares = company_record['已發行普通股數或TDR原股發行股數']
-                else:
-                    issue_shares = 0
+                    break  # 找到後立即跳出迴圈
             return {
                 'last_close_price': record['ClosingPrice'],
                 'stock_name': record['Name'], #證交所股票顯示名稱
@@ -70,10 +112,10 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
     for record in past_json_data_tpex:
         if record['SecuritiesCompanyCode'] == target_code:
             for company_record in company_json_data_tpex:
+                issue_shares = 0
                 if company_record['SecuritiesCompanyCode'] == target_code:
                     issue_shares = company_record['IssueShares']
-                else:
-                    issue_shares = 0
+                    break
             return {
                 'last_close_price': record['Close'],
                 'stock_name': record['CompanyName'], #上櫃股票顯示名稱
@@ -229,8 +271,10 @@ def update_realtime_data(stocks_df):
                 realtime_data = track_stock_realtime_data[stock_id]['realtime']
                 
                 #如果沒有最新成交價 就用買價(bid)一檔代替
-                if realtime_data['latest_trade_price'] == '-':
+                if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
                     current_price = float(realtime_data['best_bid_price'][0]) # 最佳買價一檔
+                    if current_price == 0:
+                        current_price = float(realtime_data['best_bid_price'][1])
                 else:
                     current_price = float(realtime_data['latest_trade_price'])
                 
@@ -311,10 +355,6 @@ def update_treemap(n, size_mode):
     # 轉換成 DataFrame
     treemap_df = pd.DataFrame(treemap_data)
 
-    # 每2次更新（即10秒）發送 Discord 群組漲跌幅通知
-    # if n and n % 2 == 0:
-        # send_discord_category_notification(treemap_df)
-
     # 計算族群加總市值
     # category_market_values = treemap_df.groupby('category')['market_value'].transform('sum')
     # 根據市值調整比例
@@ -356,10 +396,14 @@ def update_treemap(n, size_mode):
     fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
-        margin=dict(t=0, l=0, r=0, b=0),
+        margin=dict(t=50, l=10, r=10, b=10),
         height=900,
         coloraxis_colorbar_tickformat='.2f'
     )
+    
+    # 每2次更新（即10秒）發送 Discord 群組漲跌幅通知
+    if n and n % 2 == 0:
+        send_discord_category_notification(treemap_df , fig)
 
     # 取得當前時間
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
