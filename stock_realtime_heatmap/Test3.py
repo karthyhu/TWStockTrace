@@ -13,21 +13,31 @@ import plotly.io as pio
 
 app = dash.Dash(__name__)
 
-# 將 notified_status 設為全域變數
+# Global variables
 notified_status = {}
+last_notification_time = {}
 
 def send_discord_category_notification(treemap_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
-    global notified_status  # 使用全域變數
+    global notified_status, last_notification_time
+    
+    COOLDOWN_SECONDS = 60  # 1分鐘冷卻
+    BUFFER_THRESHOLD = 0.8  # 緩衝區 0.8%
+    
     try:
         webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         if not webhook_url:
             print("Discord webhook URL not found. Skipping notification.")
             return
+        
         # 計算各類別平均漲跌幅與數量
         category_stats = treemap_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(2)
         category_stats = category_stats.sort_values('mean', ascending=False)
+        # print("Category stats calculated:", category_stats)
+        
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_timestamp = time.time()
+        
         embed = {"title": f"📊 台股產業類股漲跌幅 - {current_time}", "color": 0x00ff00, "fields": []}
         text = ""
 
@@ -35,36 +45,55 @@ def send_discord_category_notification(treemap_df, fig):
             mean = row['mean']
             cnt = int(row['count'])
 
+            # 檢查冷卻時間
+            if cat in last_notification_time:
+                if current_timestamp - last_notification_time[cat] < COOLDOWN_SECONDS:
+                    continue
+            
+            # 獲取前次數據
+            previous_data = notified_status.get(cat, {"status": "neutral", "last_mean": 0})
+            previous_status = previous_data["status"]
+            previous_mean = previous_data["last_mean"]
+            
+            # 緩衝區檢查
+            if abs(mean - previous_mean) < BUFFER_THRESHOLD:
+                continue
+            
             # 判斷是否需要通知
-            if -3 <= mean <= 3:
-                notified_status[cat] = "neutral"  # 設定為中性狀態
+            if -3.5 < mean < 3.5:
+                notified_status[cat] = {"status": "neutral", "last_mean": mean}  # 修正：使用字典格式
                 continue  # 不通知
 
             # 判斷狀態變化
-            previous_status = notified_status.get(cat, "neutral")
-            if mean > 7:
+            if mean >= 7:
                 current_status = "high_positive"
                 emoji = "🚀🚀"
-            elif mean >= 3:
+            elif mean >= 3.5:
                 current_status = "positive"
                 emoji = "🚀"
-            elif mean < -7:
+            elif mean <= -7:
                 current_status = "high_negative"
                 emoji = "💥💥"
-            elif mean < -3:
+            elif mean <= -3.5:
                 current_status = "negative"
                 emoji = "💥"
             else:
                 current_status = "neutral"
 
-            # 收集族群內的股票及漲幅資訊
-            stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'realtime_change']]
-            stock_info = "\n".join([f"{row['stock_name']} ({row['realtime_change']:+.2f}%)" for _, row in stock_details.iterrows()])
-
             # 僅在狀態變化時通知
             if current_status != previous_status:
+                # 收集族群內的股票及漲幅資訊
+                stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'realtime_change']]
+                stock_info = "\n".join([f"{row['stock_name']} ({row['realtime_change']:+.2f}%)" for _, row in stock_details.iterrows()])
+            
                 text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n{stock_info}\n"
-                notified_status[cat] = current_status
+                
+                # 更新記錄
+                notified_status[cat] = {"status": current_status, "last_mean": mean}
+                last_notification_time[cat] = current_timestamp
+            else:
+                # 更新漲幅記錄但不通知
+                notified_status[cat]["last_mean"] = mean
 
         if text:
             embed['fields'].append({"name": "", "value": text, "inline": False})
@@ -81,13 +110,13 @@ def send_discord_category_notification(treemap_df, fig):
                 with open(heatmap_image_path, "rb") as f:
                     files = {"file": f}
                     resp = requests.post(webhook_url, files=files)
-                # if resp.status_code == 204:
-                    # print("Discord notification sent successfully with heatmap image!")
-                # else:
-                    # print(f"Failed to send Discord notification with image. Status code: {resp.status_code}, Response: {resp.text}")
+                if resp.status_code == 200:
+                    print("Discord heatmap image sent successfully!")
+                else:
+                    print(f"Failed to send Discord heatmap image. Status code: {resp.status_code}, Response: {resp.text}")
                 
             else:
-                print(f"Failed to send Discord notification. Status code: {resp.status_code}")
+                print(f"Failed to send Discord notification. Status code: {resp.status_code}, Response: {resp.text}")
     except Exception as e:
         print(f"Error sending Discord notification: {e}")
 
@@ -128,8 +157,8 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
 
 def downlod_stock_company_data():
     
-    twse_company_file_path = 't187ap03_L.json'  # 上市公司資料
-    tpex_company_file_path = 'mopsfin_t187ap03_O.json'  # 上櫃公司資料
+    twse_company_file_path = './comp_data/t187ap03_L.json'  # 上市公司資料
+    tpex_company_file_path = './comp_data/mopsfin_t187ap03_O.json'  # 上櫃公司資料
 
     # 判斷上市公司資料檔案是否已存在
     if not os.path.exists(twse_company_file_path):
@@ -200,15 +229,15 @@ def downlod_stock_data():
 def load_initial_data():
     
     downlod_stock_data()
-    time.sleep(1)
-    downlod_stock_company_data()
+    # time.sleep(1)
+    # downlod_stock_company_data()
     
     analysis_json_path = './stock_data.json'
 
     past_day_json_path_twse = './STOCK_DAY_ALL.json'
     past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
-    company_data_json_path_twse = './t187ap03_L.json'
-    company_data_json_path_tpex = './mopsfin_t187ap03_O.json'
+    company_data_json_path_twse = './comp_data/t187ap03_L.json'
+    company_data_json_path_tpex = './comp_data/mopsfin_t187ap03_O.json'
 
     with open(analysis_json_path, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
@@ -319,7 +348,6 @@ app.layout = html.Div([
     [Input('interval-update', 'n_intervals'),
      Input('size-mode', 'value')]
 )
-# def update_treemap(n):
 def update_treemap(n, size_mode):
     # 更新即時股價
     updated_stocks_df = update_realtime_data(initial_stocks_df.copy())
@@ -434,4 +462,4 @@ def display_stock_link(clickData):
     ], style={'textAlign': 'center', 'marginTop': '10px'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True , port=7777)
