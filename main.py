@@ -4,6 +4,7 @@ import os
 import calstockgan
 import trace_manager
 import heatmap_discord
+import TOC_manager
 
 def check_and_delete_old_files(directory, max_files=30):
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -133,5 +134,9 @@ if __name__ == "__main__":
     heatmap_discord.send_heatmap_to_discord(send_image=True, use_treemap=False)
     
     print("="*50 + "\n")
+    
+    # 更新 上櫃 資料
+    print("開始更新上櫃資料...")
+    TOC_manager.TOC_manager().daily_trace()
     
     print("Update completed.")
