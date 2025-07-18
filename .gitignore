@@ -3,3 +3,5 @@ env/
 ignore_tools/
 venv
 .env
+/stock_realtime_heatmap/esun_key_file/*.p12
+/stock_realtime_heatmap/esun_key_file/*.ini
