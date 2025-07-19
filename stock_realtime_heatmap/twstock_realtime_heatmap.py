@@ -14,303 +14,12 @@ from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
 
-app = dash.Dash(__name__)
-
-
-app.layout = html.Div([
-    # 1. Taiwan Stock Realtime Heatmap 大標題 ----------------------------
-    html.H1("Taiwan Stock Realtime Heatmap", style={'textAlign': 'center', 'marginBottom': 30}),
-
-    # 2. Display Mode ----------------------------
-    html.Div([
-        html.Label('Display Mode：', style={'marginRight': '5px', 'display': 'inline-block'}),
-        dcc.RadioItems(
-            options=[
-                {'label': 'Normal Display', 'value': 'equal'},
-                {'label': 'Market Cap Display', 'value': 'market'},
-                {'label': 'Bubble Chart', 'value': 'bubble'}  # 新增 Bubble Chart 選項
-            ],
-            id='size-mode',
-            value='equal',
-            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
-            style={'display': 'inline-block'}
-        )
-    ], style={'textAlign': 'center', 'marginBottom': 20}),
-    
-    # 3. Enable Notifications ----------------------------
-    html.Div([
-        html.Label('Enable Notifications：', style={'marginRight': '5px', 'display': 'inline-block'}),
-        daq.ToggleSwitch(id='enable-notifications', value=False, label=['Disable', 'Enable'], style={'display': 'inline-block'})  # 使用 dash_daq.ToggleSwitch
-    ], style={'textAlign': 'center', 'marginBottom': '20px'}),
-    
-    # 4. Last Update Time ----------------------------
-    html.Div([
-        html.Span("Last Update Time: ", style={'fontWeight': 'bold'}),
-        html.Span(id='last-update-time', style={'color': 'blue'})
-    ], style={'textAlign': 'center', 'marginBottom': 20}),
-    
-    # 5. Heatmap or Bubble Chart ----------------------------
-    dcc.Graph(id='live-treemap'),
-    dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
-    
-    # 6. Stock Order Interface ----------------------------
-    html.Div(id='stock-link-container', style={'textAlign': 'center', 'marginTop': 20}),
-    html.Div([
-        html.H2("Stock Order Interface", style={'textAlign': 'center', 'marginTop': 30}),
-        # 6-1. Order Type toggle ----------------------------
-        html.Div([
-            html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
-            daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block'} ),
-        ], style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Div([
-            html.Label("Select Category："),
-            # 6-2. Category Dropdown ----------------------------
-            dcc.Dropdown(
-                id='group-dropdown',
-                options=[],  # 會在回調中動態填充
-                placeholder="選擇族群",
-                style={'width': '50%', 'margin': '0 auto'}
-            ),
-        ], style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Div(id='stock-input-container', style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'block', 'margin': '0 auto'}),
-        html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'})
-    ])
-])
-
-
-
-@app.callback(
-    [Output('live-treemap', 'figure'),
-     Output('last-update-time', 'children')],
-    [Input('interval-update', 'n_intervals'),
-     Input('size-mode', 'value'),
-     Input('enable-notifications', 'value')]  # 新增通知開關的輸入
-)
-def update_treemap(n, size_mode, enable_notifications):
-    
-    updated_stocks_df = update_realtime_data(initial_stocks_df.copy()) # 更新即時股價
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
-    
-    # 準備 treemap 資料
-    treemap_data = []
-    df_transposed = updated_stocks_df.T
-
-    for stock_id, row in df_transposed.iterrows():
-        # 計算市值
-        market_value = row['issue_shares'] * row['realtime_price'] if not pd.isna(row['realtime_price']) else 0
-        # 格式化市值顯示
-        if market_value >= 1e8:
-            market_value_display = f"{int(market_value / 1e8)}e"
-        else:
-            market_value_display = f"{int(market_value / 1e4)}w"
-        
-        # 為每個股票的每個類別建立一筆資料
-        for category in row['category']:
-            treemap_data.append({
-                'stock_meta': 'Taiwan Stock',
-                'stock_id': stock_id,
-                'stock_name': row['stock_name'],
-                'category': category,
-                'realtime_change': row['realtime_change'],
-                'realtime_price': row['realtime_price'],
-                'last_day_price': row['last_day_price'],
-                'stock_type': row['stock_type'],
-                'market_cap': market_value_display,  # Display 使用
-                'market_value': market_value  # 保留原始數字值
-            })
-
-    # 轉換成 DataFrame
-    treemap_df = pd.DataFrame(treemap_data)
-
-    # 根據顯示模式決定區塊大小
-    if size_mode == 'equal' or size_mode == 'market':
-        if size_mode == 'equal':
-            # 平均大小模式，所有區塊大小相同
-            values = [1] * len(treemap_df)
-        elif size_mode == 'market':
-            # 市值大小模式，分 5 區間
-            def map_size(mv):
-                # 區間對應大小
-                if mv > 6e11:      # 6000e 以上
-                    return 5
-                elif mv > 1e11:    # 1000e 以上
-                    return 4
-                elif mv > 5e10:    # 500e 以上
-                    return 3
-                elif mv > 1e10:    # 100e 以上
-                    return 2
-                else:              # 100e 以下
-                    return 1
-            values = treemap_df['market_value'].apply(map_size).tolist()
-            
-        # 建立 treemap
-        fig = px.treemap(
-            treemap_df,
-            path=['stock_meta', 'category', 'stock_name'],
-            values=values,
-            color='realtime_change',
-            color_continuous_scale='RdYlGn_r',
-            title='',
-            range_color=[-10, 10],
-            color_continuous_midpoint=0,
-            hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type', 'market_cap'],
-            custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
-        )
-
-        fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
-        fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
-            margin=dict(t=50, l=10, r=10, b=10),
-            height=900,
-            coloraxis_colorbar_tickformat='.2f'
-        )
-    else:
-        # Bubble Chart 模式，氣泡大小根據市值加總
-        bubble_data = treemap_df.groupby('category').agg(
-            mean_change=('realtime_change', 'mean'),
-            total_market_value=('market_value', 'sum')
-        ).reset_index()
-
-        # 修改 Bubble Chart 的 X 軸和 Y 軸設置
-        bubble_data = bubble_data.sort_values('mean_change')  # 按漲幅排序
-        fig = px.scatter(
-            bubble_data,
-            x='category',  # X 軸顯示群組類別
-            y='mean_change',  # Y 軸顯示漲幅
-            size='total_market_value',
-            color='mean_change',
-            color_continuous_scale='RdYlGn_r',
-            title='',
-            labels={'mean_change': 'Mean Change (%)', 'total_market_value': 'Total Market Value'},
-            hover_name='category',
-            size_max=60
-        )
-
-        fig.update_layout(
-            xaxis=dict(title='Category', categoryorder='array', categoryarray=bubble_data['category']),  # X 軸按排序顯示
-            yaxis=dict(title='Mean Change (%)'),
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=50, l=10, r=10, b=10),
-            height=900,
-            coloraxis_colorbar_tickformat='.2f'
-        )
-    
-    #發送 Discord 群組漲跌幅通知
-    if enable_notifications:  # 只有在通知開關打開時才發送通知
-        send_discord_category_notification(treemap_df, fig)
-
-    return fig, current_time
-
-# 點擊 treemap 顯示外部連結
-@app.callback(
-    Output('stock-link-container', 'children'),
-    Input('live-treemap', 'clickData')
-)
-def display_stock_link(clickData):
-    if not clickData or not clickData['points']:
-        return ''
-    
-    point = clickData['points'][0]
-    stock_meta = point['label']  # 獲取點擊的標籤
-
-    # 如果點擊的是最外圍的 "Taiwan Stock"，顯示三個指定的連結
-    if stock_meta == "Taiwan Stock":
-        return html.Div([
-            html.A("Goodinfo", href="https://goodinfo.tw/tw/index.asp", target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
-            html.A("Wantgoo", href="https://www.wantgoo.com/stock", target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
-            html.A("TradingView - TWSE", href="https://tw.tradingview.com/chart/?symbol=TWSE%3AIX0001", target="_blank", style={'fontSize': '18px', 'color': 'black', 'marginRight': '20px'}),
-            html.A("TradingView - TPEx", href="https://tw.tradingview.com/chart/?symbol=TPEX%3AIX0118", target="_blank", style={'fontSize': '18px', 'color': 'black'})
-        ], style={'textAlign': 'center', 'marginTop': '10px'})
-
-    # 如果點擊的是其他股票，顯示該股票的連結
-    stock_id = point['customdata'][1]
-    stock_type = point['customdata'][4]
-    prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
-    url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
-    url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
-    url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
-    
-    return html.Div([
-        html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
-        html.A(f"Wantgoo - {stock_id}", href=url_wantgoo, target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
-        html.A(f"TradingView - {stock_id}", href=url_tradingView, target="_blank", style={'fontSize': '18px', 'color': 'black'})
-    ], style={'textAlign': 'center', 'marginTop': '10px'})
-
-# 在這裡新增下單介面的回調函數
-@app.callback(
-    Output('group-dropdown', 'options'),
-    Input('live-treemap', 'figure')
-)
-def update_group_dropdown(fig):
-    """根據熱力圖更新族群選項"""
-    if not fig or 'data' not in fig:
-        return []
-    categories = set()
-    for trace in fig['data']:
-        if 'customdata' in trace:
-            for customdata in trace['customdata']:
-                if len(customdata) > 1:  # 確保有類別資料
-                    categories.add(customdata[0])  # 修正為提取正確的 category
-    return [{'label': cat, 'value': cat} for cat in sorted(categories)]
-
-@app.callback(
-    Output('stock-input-container', 'children'),
-    Input('group-dropdown', 'value'),
-    State('live-treemap', 'figure')
-)
-def populate_stock_inputs(selected_group, fig):
-    """根據選擇的族群自動填充股號"""
-    if not selected_group or not fig or 'data' not in fig:
-        return ''
-    stocks = []
-    for trace in fig['data']:
-        if 'customdata' in trace:
-            for customdata in trace['customdata']:
-                if len(customdata) > 1 and customdata[0] == selected_group:
-                    stocks.append(customdata[1])  # 獲取股號
-    return html.Div([
-        html.Div([
-            html.Label(f"股號：{stock}", style={'marginRight': '10px'}),
-            dcc.Input(id={'type': 'price-input', 'index': stock}, type='number', placeholder='價格', style={'marginRight': '10px'}),
-            dcc.Input(id={'type': 'quantity-input', 'index': stock}, type='number', placeholder='張數')
-        ], style={'marginBottom': '10px'}) for stock in stocks
-    ])
-
-@app.callback(
-    Output('order-status', 'children'),
-    Input('confirm-order-button', 'n_clicks'),
-    State('buy-sell-toggle', 'value'),
-    State('group-dropdown', 'value'),
-    State({'type': 'price-input', 'index': ALL}, 'value'),
-    State({'type': 'quantity-input', 'index': ALL}, 'value'),
-    State({'type': 'price-input', 'index': ALL}, 'id'),
-)
-def confirm_order(n_clicks, buy_sell, selected_group, prices, quantities, ids):
-    """處理下單邏輯"""
-    if n_clicks == 0:
-        return ''
-    if not selected_group or not prices or not quantities:
-        return "請填寫完整的下單資訊！"
-    
-    action = "買進" if buy_sell else "賣出"
-    orders = []
-    for price, quantity, stock_id in zip(prices, quantities, ids):
-        if price is not None and quantity is not None:
-            orders.append(f"{action} {stock_id['index']}，價格：{price}，張數：{quantity}")
-    
-    if not orders:
-        return "請填寫完整的下單資訊！"
-    
-    # 模擬下單成功
-    return f"下單成功！\n" + "\n".join(orders)
-
-
-
 
 # Global variables
-notified_status = {}
-last_notification_time = {}
+g_notified_status = {}
+g_last_notification_time = {}
+g_stock_category = []
+g_category_json = {}
 
 def send_line_message_v3(message, channel_access_token, user_id):
     """使用 Line Messaging API v3 發送訊息"""
@@ -325,7 +34,7 @@ def send_line_message_v3(message, channel_access_token, user_id):
         
 def send_discord_category_notification(treemap_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
-    global notified_status, last_notification_time
+    global g_notified_status, g_last_notification_time
     
     COOLDOWN_SECONDS = 60  # 1分鐘冷卻
     BUFFER_THRESHOLD = 0.8  # 緩衝區 0.8%
@@ -362,12 +71,12 @@ def send_discord_category_notification(treemap_df, fig):
                 color_code = '\033[32m'  # 綠色
 
             # 檢查冷卻時間
-            if cat in last_notification_time:
-                if current_timestamp - last_notification_time[cat] < COOLDOWN_SECONDS:
+            if cat in g_last_notification_time:
+                if current_timestamp - g_last_notification_time[cat] < COOLDOWN_SECONDS:
                     continue
             
             # 獲取前次數據
-            previous_data = notified_status.get(cat, {"status": "neutral", "last_mean": 0})
+            previous_data = g_notified_status.get(cat, {"status": "neutral", "last_mean": 0})
             previous_status = previous_data["status"]
             previous_mean = previous_data["last_mean"]
             
@@ -379,7 +88,7 @@ def send_discord_category_notification(treemap_df, fig):
             # 判斷是否需要通知
             if -3.5 < mean < 3.5:
                 print(f"{color_code}[DEBUG] Neutral category {cat}: mean={mean}, last_mean={previous_mean}\033[0m")
-                notified_status[cat] = {"status": "neutral", "last_mean": mean}
+                g_notified_status[cat] = {"status": "neutral", "last_mean": mean}
                 continue
 
             # 判斷狀態變化
@@ -409,11 +118,11 @@ def send_discord_category_notification(treemap_df, fig):
                 text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n{stock_info}\n"
 
                 # 更新記錄
-                notified_status[cat] = {"status": current_status, "last_mean": mean}
-                last_notification_time[cat] = current_timestamp
+                g_notified_status[cat] = {"status": current_status, "last_mean": mean}
+                g_last_notification_time[cat] = current_timestamp
             else:
                 # 更新漲幅記錄但不通知
-                notified_status[cat]["last_mean"] = mean
+                g_notified_status[cat]["last_mean"] = mean
 
         if text:
             embed['fields'].append({"name": "", "value": text, "inline": False})
@@ -569,14 +278,14 @@ def load_initial_data():
     # downlod_stock_company_data()
     
     analysis_json_path = './my_stock_category.json'
-
     past_day_json_path_twse = './STOCK_DAY_ALL.json'
     past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
     company_data_json_path_twse = './comp_data/t187ap03_L.json'
     company_data_json_path_tpex = './comp_data/mopsfin_t187ap03_O.json'
 
     with open(analysis_json_path, 'r', encoding='utf-8') as f:
-        json_data = json.load(f)
+        global g_category_json
+        g_category_json = json.load(f)
     with open(past_day_json_path_twse, 'r', encoding='utf-8') as f:
         past_json_data_twse = json.load(f)
     with open(past_day_json_path_tpex, 'r', encoding='utf-8') as f:
@@ -585,9 +294,12 @@ def load_initial_data():
         company_json_data_twse = json.load(f)
     with open(company_data_json_path_tpex, 'r', encoding='utf-8') as f:
         company_json_data_tpex = json.load(f)
-        
+
+    global g_stock_category
+    g_stock_category = list(g_category_json['台股'].keys())  # 提取所有類別名稱
+
     stocks_info_list = {}
-    for category, stocks_info in json_data['台股'].items():
+    for category, stocks_info in g_category_json['台股'].items():
         for stock_id, stock_info in stocks_info.items():
             
             last_stock_info = get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_twse, company_json_data_tpex, stock_id)
@@ -658,6 +370,319 @@ def update_realtime_data(stocks_df):
 
 # 載入初始股票資料
 initial_stocks_df = load_initial_data()
+
+app = dash.Dash(__name__)
+
+app.layout = html.Div([
+    # 1. Taiwan Stock Realtime Heatmap 大標題 ----------------------------
+    html.H1("Taiwan Stock Realtime Heatmap", style={'textAlign': 'center', 'marginBottom': 30}),
+
+    # 2. Display Mode ----------------------------
+    html.Div([
+        html.Label('Display Mode：', style={'marginRight': '5px', 'display': 'inline-block'}),
+        dcc.RadioItems(
+            options=[
+                {'label': 'Normal Display', 'value': 'equal'},
+                {'label': 'Market Cap Display', 'value': 'market'},
+                {'label': 'Bubble Chart', 'value': 'bubble'}  # 新增 Bubble Chart 選項
+            ],
+            id='size-mode',
+            value='equal',
+            labelStyle={'display': 'inline-block', 'marginRight': '10px'},
+            style={'display': 'inline-block'}
+        )
+    ], style={'textAlign': 'center', 'marginBottom': 20}),
+    
+    # 3. Enable Notifications ----------------------------
+    html.Div([
+        html.Label('Enable Notifications：', style={'marginRight': '5px', 'display': 'inline-block'}),
+        daq.ToggleSwitch(id='enable-notifications', value=False, label=['Disable', 'Enable'], style={'display': 'inline-block'})  # 使用 dash_daq.ToggleSwitch
+    ], style={'textAlign': 'center', 'marginBottom': '20px'}),
+    
+    # 4. Last Update Time ----------------------------
+    html.Div([
+        html.Span("Last Update Time: ", style={'fontWeight': 'bold'}),
+        html.Span(id='last-update-time', style={'color': 'blue'})
+    ], style={'textAlign': 'center', 'marginBottom': 20}),
+    
+    # 5. Heatmap or Bubble Chart ----------------------------
+    dcc.Graph(id='live-treemap'),
+    dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
+    
+    # 6. Stock Order Interface ----------------------------
+    html.Div(id='stock-link-container', style={'textAlign': 'center', 'marginTop': 20}),
+    html.Div([
+        html.H2("Stock Order Interface", style={'textAlign': 'center', 'marginTop': 30}),
+        # 6-1. Order Type toggle ----------------------------
+        html.Div([
+            html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
+            daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block'} ),
+        ], style={'textAlign': 'center', 'marginBottom': '20px'}),
+        html.Div([
+            html.Label("Select Category："),
+            # 6-2. Category Dropdown ----------------------------
+            dcc.Dropdown(
+                id='group-dropdown',
+                options=[{'label': cat, 'value': cat} for cat in g_stock_category],
+                placeholder="選擇族群",
+                style={'width': '50%', 'margin': '0 auto'}
+            ),
+        ], style={'textAlign': 'center', 'marginBottom': '20px'}),
+        html.Div(id='stock-input-container', style={'textAlign': 'center', 'marginBottom': '20px'}),
+        html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'block', 'margin': '0 auto'}),
+        html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'})
+    ])
+])
+
+
+@app.callback(
+    [Output('live-treemap', 'figure'),
+     Output('last-update-time', 'children')],
+    [Input('interval-update', 'n_intervals'),
+     Input('size-mode', 'value'),
+     Input('enable-notifications', 'value')]  # 新增通知開關的輸入
+)
+def update_treemap(n, size_mode, enable_notifications):
+    
+    updated_stocks_df = update_realtime_data(initial_stocks_df.copy()) # 更新即時股價
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
+    
+    # 準備 treemap 資料
+    treemap_data = []
+    df_transposed = updated_stocks_df.T
+
+    for stock_id, row in df_transposed.iterrows():
+        # 計算市值
+        market_value = row['issue_shares'] * row['realtime_price'] if not pd.isna(row['realtime_price']) else 0
+        # 格式化市值顯示
+        if market_value >= 1e8:
+            market_value_display = f"{int(market_value / 1e8)}e"
+        else:
+            market_value_display = f"{int(market_value / 1e4)}w"
+        
+        # 為每個股票的每個類別建立一筆資料
+        for category in row['category']:
+            treemap_data.append({
+                'stock_meta': 'Taiwan Stock',
+                'stock_id': stock_id,
+                'stock_name': row['stock_name'],
+                'category': category,
+                'realtime_change': row['realtime_change'],
+                'realtime_price': row['realtime_price'],
+                'last_day_price': row['last_day_price'],
+                'stock_type': row['stock_type'],
+                'market_cap': market_value_display,  # Display 使用
+                'market_value': market_value  # 保留原始數字值
+            })
+
+    # 轉換成 DataFrame
+    treemap_df = pd.DataFrame(treemap_data)
+
+    # 根據顯示模式決定區塊大小
+    if size_mode == 'equal' or size_mode == 'market':
+        if size_mode == 'equal':
+            # 平均大小模式，所有區塊大小相同
+            values = [1] * len(treemap_df)
+        elif size_mode == 'market':
+            # 市值大小模式，分 5 區間
+            def map_size(mv):
+                # 區間對應大小
+                if mv > 6e11:      # 6000e 以上
+                    return 5
+                elif mv > 1e11:    # 1000e 以上
+                    return 4
+                elif mv > 5e10:    # 500e 以上
+                    return 3
+                elif mv > 1e10:    # 100e 以上
+                    return 2
+                else:              # 100e 以下
+                    return 1
+            values = treemap_df['market_value'].apply(map_size).tolist()
+            
+        # 建立 treemap
+        fig = px.treemap(
+            treemap_df,
+            path=['stock_meta', 'category', 'stock_name'],
+            values=values,
+            color='realtime_change',
+            color_continuous_scale='RdYlGn_r',
+            title='',
+            range_color=[-10, 10],
+            color_continuous_midpoint=0,
+            hover_data=['stock_id', 'realtime_price', 'last_day_price', 'stock_type', 'market_cap'],
+            custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
+        )
+
+        fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
+            margin=dict(t=50, l=10, r=10, b=10),
+            height=900,
+            coloraxis_colorbar_tickformat='.2f'
+        )
+    else:
+        # Bubble Chart 模式，氣泡大小根據市值加總
+        bubble_data = treemap_df.groupby('category').agg(
+            mean_change=('realtime_change', 'mean'),
+            total_market_value=('market_value', 'sum')
+        ).reset_index()
+
+        # 修改 Bubble Chart 的 X 軸和 Y 軸設置
+        bubble_data = bubble_data.sort_values('mean_change')  # 按漲幅排序
+        fig = px.scatter(
+            bubble_data,
+            x='category',  # X 軸顯示群組類別
+            y='mean_change',  # Y 軸顯示漲幅
+            size='total_market_value',
+            color='mean_change',
+            color_continuous_scale='RdYlGn_r',
+            title='',
+            labels={'mean_change': 'Mean Change (%)', 'total_market_value': 'Total Market Value'},
+            hover_name='category',
+            size_max=60
+        )
+
+        fig.update_layout(
+            xaxis=dict(title='Category', categoryorder='array', categoryarray=bubble_data['category']),  # X 軸按排序顯示
+            yaxis=dict(title='Mean Change (%)'),
+            paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=50, l=10, r=10, b=10),
+            height=900,
+            coloraxis_colorbar_tickformat='.2f'
+        )
+    
+    #發送 Discord 群組漲跌幅通知
+    if enable_notifications:  # 只有在通知開關打開時才發送通知
+        send_discord_category_notification(treemap_df, fig)
+
+    return fig, current_time
+
+# 點擊 treemap 顯示外部連結並更新下拉選單
+@app.callback(
+    [Output('stock-link-container', 'children'),
+     Output('group-dropdown', 'value')],
+    Input('live-treemap', 'clickData')
+)
+def display_stock_link(clickData):
+    if not clickData or not clickData['points']:
+        return '', None
+    
+    point = clickData['points'][0]
+    label = point['label']  # 獲取點擊的標籤
+    
+    # 檢查是否是類股群組名稱
+    selected_category = None
+    if label in g_stock_category:
+        selected_category = label
+
+    # 如果點擊的是最外圍的 "Taiwan Stock"，顯示三個指定的連結
+    if label == "Taiwan Stock":
+        links_div = html.Div([
+            html.A("Goodinfo", href="https://goodinfo.tw/tw/index.asp", target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
+            html.A("Wantgoo", href="https://www.wantgoo.com/stock", target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
+            html.A("TradingView - TWSE", href="https://tw.tradingview.com/chart/?symbol=TWSE%3AIX0001", target="_blank", style={'fontSize': '18px', 'color': 'black', 'marginRight': '20px'}),
+            html.A("TradingView - TPEx", href="https://tw.tradingview.com/chart/?symbol=TPEX%3AIX0118", target="_blank", style={'fontSize': '18px', 'color': 'black'})
+        ], style={'textAlign': 'center', 'marginTop': '10px'})
+        return links_div, None
+
+    # 如果點擊的是其他股票，顯示該股票的連結
+    stock_id = point['customdata'][1]
+    stock_type = point['customdata'][4]
+    prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
+    url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
+    url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
+    url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
+    
+    links_div = html.Div([
+        html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
+        html.A(f"Wantgoo - {stock_id}", href=url_wantgoo, target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
+        html.A(f"TradingView - {stock_id}", href=url_tradingView, target="_blank", style={'fontSize': '18px', 'color': 'black'})
+    ], style={'textAlign': 'center', 'marginTop': '10px'})
+    return links_div, selected_category
+
+
+@app.callback(
+    Output('stock-input-container', 'children'),
+    Input('group-dropdown', 'value')
+)
+def populate_stock_inputs(selected_group):
+    """根據選擇的族群自動填充股票資訊"""
+    if not selected_group:
+        return ''
+    
+    # 獲取選定類股群組的股票
+    if selected_group in g_category_json['台股']:
+        stocks = g_category_json['台股'][selected_group]
+        
+        # 建立股票列表界面
+        return html.Div([
+            # 標題列
+            html.Div([
+                html.Div("Stock ID", style={'width': '15%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock Name", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Price", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Volume(張)", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            ], style={'marginBottom': '10px', 'backgroundColor': '#f0f0f0', 'padding': '10px'}),
+            
+            # 股票資訊列
+            *[
+                html.Div([
+                    
+                    html.Div(stock_id, style={'width': '15%', 'display': 'inline-block'}), # 股票代號
+                    html.Div(stock_info['股票'], style={'width': '25%', 'display': 'inline-block'}), # 股票名稱
+                    # 價格輸入
+                    html.Div(
+                        dcc.Input(
+                            id={'type': 'price-input', 'index': stock_id},
+                            type='number',
+                            placeholder='輸入價格',
+                            style={'width': '80%'}
+                        ),
+                        style={'width': '25%', 'display': 'inline-block'}
+                    ),
+                    # 張數輸入
+                    html.Div(
+                        dcc.Input(
+                            id={'type': 'quantity-input', 'index': stock_id},
+                            type='number',
+                            placeholder='輸入張數',
+                            style={'width': '80%'}
+                        ),
+                        style={'width': '25%', 'display': 'inline-block'}
+                    ),
+                ], style={'marginBottom': '5px', 'padding': '5px', 'borderBottom': '1px solid #ddd'})
+                for stock_id, stock_info in stocks.items()
+            ]
+        ], style={'maxHeight': '400px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'})
+
+@app.callback(
+    Output('order-status', 'children'),
+    Input('confirm-order-button', 'n_clicks'),
+    State('buy-sell-toggle', 'value'),
+    State('group-dropdown', 'value'),
+    State({'type': 'price-input', 'index': ALL}, 'value'),
+    State({'type': 'quantity-input', 'index': ALL}, 'value'),
+    State({'type': 'price-input', 'index': ALL}, 'id'),
+)
+def confirm_order(n_clicks, buy_sell, selected_group, prices, quantities, ids):
+    """處理下單邏輯"""
+    if n_clicks == 0:
+        return ''
+    if not selected_group or not prices or not quantities:
+        return "請填寫完整的下單資訊！"
+    
+    action = "買進" if buy_sell else "賣出"
+    orders = []
+    for price, quantity, stock_id in zip(prices, quantities, ids):
+        if price is not None and quantity is not None:
+            orders.append(f"{action} {stock_id['index']}，價格：{price}，張數：{quantity}")
+    
+    if not orders:
+        return "請填寫完整的下單資訊！"
+    
+    # 模擬下單成功
+    return f"下單成功！\n" + "\n".join(orders)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
