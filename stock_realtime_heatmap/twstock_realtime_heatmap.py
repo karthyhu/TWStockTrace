@@ -409,18 +409,22 @@ app.layout = html.Div([
     dcc.Graph(id='live-treemap'),
     dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
     
-    # 6. Stock Order Interface ----------------------------
+    # 6. Stock Link Container ----------------------------
     html.Div(id='stock-link-container', style={'textAlign': 'center', 'marginTop': 20}),
+
+    # 7. Stock Trading Interface ----------------------------
     html.Div([
-        html.H2("Stock Order Interface", style={'textAlign': 'center', 'marginTop': 30}),
-        # 6-1. Order Type toggle ----------------------------
+        html.H1("Stock Trading Interface", style={'textAlign': 'center', 'marginTop': 30}),
+        # 7-1. Order Type toggle ----------------------------
         html.Div([
             html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
-            daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block'} ),
+            daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block', 'marginRight': '20px'} ),
+            daq.ToggleSwitch( id='order_type', value=True, label=['Market Order：', 'Limit Order'], style={'display': 'inline-block', 'marginRight': '20px'} ),
+            daq.ToggleSwitch( id='Funding_strategy', value=True, label=['Manual', 'Average'], style={'display': 'inline-block'} ),
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div([
             html.Label("Select Category："),
-            # 6-2. Category Dropdown ----------------------------
+            # 7-2. Category Dropdown ----------------------------
             dcc.Dropdown(
                 id='group-dropdown',
                 options=[{'label': cat, 'value': cat} for cat in g_stock_category],
@@ -429,7 +433,11 @@ app.layout = html.Div([
             ),
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div(id='stock-input-container', style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'block', 'margin': '0 auto'}),
+        html.Div([
+            html.Button("Refresh", id='refersh-button', n_clicks=0, style={'display': 'inline-block', 'marginRight': '20px'}),
+            html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'inline-block'})
+        ]
+        , style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'})
     ])
 ])
@@ -618,18 +626,21 @@ def populate_stock_inputs(selected_group):
         return html.Div([
             # 標題列
             html.Div([
-                html.Div("Stock ID", style={'width': '15%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Stock Name", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Price", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Volume(張)", style={'width': '25%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Trade Toggle", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock ID", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock Name", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Price", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Volume(張)", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Est. Cost", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Order Status", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
             ], style={'marginBottom': '10px', 'backgroundColor': '#f0f0f0', 'padding': '10px'}),
             
             # 股票資訊列
             *[
                 html.Div([
-                    
-                    html.Div(stock_id, style={'width': '15%', 'display': 'inline-block'}), # 股票代號
-                    html.Div(stock_info['股票'], style={'width': '25%', 'display': 'inline-block'}), # 股票名稱
+                    daq.ToggleSwitch( id='order-toggle', value=True, label=['Off', 'On'], style={'width': '14%', 'display': 'inline-block'} ),       
+                    html.Div(stock_id, style={'width': '14%', 'display': 'inline-block'}), # 股票代號
+                    html.Div(stock_info['股票'], style={'width': '14%', 'display': 'inline-block'}), # 股票名稱
                     # 價格輸入
                     html.Div(
                         dcc.Input(
@@ -638,7 +649,7 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入價格',
                             style={'width': '80%'}
                         ),
-                        style={'width': '25%', 'display': 'inline-block'}
+                        style={'width': '14%', 'display': 'inline-block'}
                     ),
                     # 張數輸入
                     html.Div(
@@ -648,8 +659,11 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入張數',
                             style={'width': '80%'}
                         ),
-                        style={'width': '25%', 'display': 'inline-block'}
+                        style={'width': '14%', 'display': 'inline-block'}
                     ),
+                    html.Label('0', style={'width': '14%', 'display': 'inline-block'}),
+                    html.Label('Not ordered', style={'width': '14%', 'display': 'inline-block'}),
+
                 ], style={'marginBottom': '5px', 'padding': '5px', 'borderBottom': '1px solid #ddd'})
                 for stock_id, stock_info in stocks.items()
             ]
