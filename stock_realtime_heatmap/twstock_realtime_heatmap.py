@@ -1,6 +1,7 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, ALL
+from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import json
@@ -20,6 +21,7 @@ g_notified_status = {}
 g_last_notification_time = {}
 g_stock_category = []
 g_category_json = {}
+g_track_stock_realtime_data = {}
 
 def send_line_message_v3(message, channel_access_token, user_id):
     """使用 Line Messaging API v3 發送訊息"""
@@ -341,16 +343,17 @@ def update_realtime_data(stocks_df):
         track_stock_realtime_data_2 = twstock.realtime.get(list(stocks_df.columns[len(stocks_df.columns)//2:]))
 
         # 合併資料
-        track_stock_realtime_data = {**track_stock_realtime_data_1, **track_stock_realtime_data_2}
+        global g_track_stock_realtime_data
+        g_track_stock_realtime_data = {**track_stock_realtime_data_1, **track_stock_realtime_data_2}
     except (KeyError, ValueError):
         print("部分即時資料缺少 timestamp，略過")
-        track_stock_realtime_data = {}
+        g_track_stock_realtime_data = {}
 
     for stock_id in stocks_df.columns:
-        if stock_id in track_stock_realtime_data and 'realtime' in track_stock_realtime_data[stock_id]:
-            if track_stock_realtime_data[stock_id]['success']:
+        if stock_id in g_track_stock_realtime_data and 'realtime' in g_track_stock_realtime_data[stock_id]:
+            if g_track_stock_realtime_data[stock_id]['success']:
                 
-                realtime_data = track_stock_realtime_data[stock_id]['realtime']
+                realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
                 
                 #如果沒有最新成交價 就用買價(bid)一檔代替
                 if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
@@ -371,7 +374,7 @@ def update_realtime_data(stocks_df):
 # 載入初始股票資料
 initial_stocks_df = load_initial_data()
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
 app.layout = html.Div([
     # 1. Taiwan Stock Realtime Heatmap 大標題 ----------------------------
@@ -420,7 +423,8 @@ app.layout = html.Div([
             html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
             daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block', 'marginRight': '20px'} ),
             daq.ToggleSwitch( id='order_type', value=True, label=['Market Order：', 'Limit Order'], style={'display': 'inline-block', 'marginRight': '20px'} ),
-            daq.ToggleSwitch( id='Funding_strategy', value=True, label=['Manual', 'Average'], style={'display': 'inline-block'} ),
+            daq.ToggleSwitch( id='Funding_strategy', value=False, label=['Manual', 'Average'], style={'display': 'inline-block', 'marginRight': '10px'} ),
+            html.Div(id='average-amount-input', style={'display': 'inline-block'})
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div([
             html.Label("Select Category："),
@@ -438,7 +442,40 @@ app.layout = html.Div([
             html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'inline-block'})
         ]
         , style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'})
+        html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'}),
+        
+        # 確認對話框
+        html.Div(
+            id='order-confirmation-modal',
+            children=[
+                html.Div([
+                    html.Div([
+                        html.H3("確認下單資訊", style={'textAlign': 'center', 'marginBottom': '20px'}),
+                        html.Div(id='confirmation-details', style={'marginBottom': '20px', 'padding': '15px', 'backgroundColor': '#f9f9f9', 'border': '1px solid #ddd'}),
+                        html.Div([
+                            html.Button("確認下單", id='confirm-final-order', n_clicks=0, style={'marginRight': '10px', 'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'}),
+                            html.Button("取消", id='cancel-order', n_clicks=0, style={'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'})
+                        ], style={'textAlign': 'center'})
+                    ], style={
+                        'backgroundColor': 'white',
+                        'margin': '50px auto',
+                        'padding': '30px',
+                        'width': '60%',
+                        'borderRadius': '10px',
+                        'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    })
+                ], style={
+                    'position': 'fixed',
+                    'top': '0',
+                    'left': '0',
+                    'width': '100%',
+                    'height': '100%',
+                    'backgroundColor': 'rgba(0, 0, 0, 0.5)',
+                    'zIndex': '1000'
+                })
+            ],
+            style={'display': 'none'}
+        )
     ])
 ])
 
@@ -610,6 +647,26 @@ def display_stock_link(clickData):
 
 
 @app.callback(
+    Output('average-amount-input', 'children'),
+    Input('Funding_strategy', 'value')
+)
+def toggle_average_input(funding_strategy_value):
+    """當Funding_strategy切換到Average時顯示金額輸入框"""
+    if funding_strategy_value:  # True 表示切換到 "Average"
+        return [
+            html.Label("投資金額(元)：", style={'marginRight': '5px', 'display': 'inline-block'}),
+            dcc.Input(
+                id='average-amount',
+                type='number',
+                placeholder='輸入總投資金額',
+                style={'width': '150px', 'display': 'inline-block'}
+            )
+        ]
+    else:  # False 表示切換到 "Manual"
+        return ''
+
+
+@app.callback(
     Output('stock-input-container', 'children'),
     Input('group-dropdown', 'value')
 )
@@ -626,21 +683,28 @@ def populate_stock_inputs(selected_group):
         return html.Div([
             # 標題列
             html.Div([
-                html.Div("Trade Toggle", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Stock ID", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Stock Name", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Price", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Volume(張)", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Est. Cost", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Order Status", style={'width': '14%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Trade Toggle", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock ID", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock Name", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Price", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Volume(張)", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Odd Lots(股)", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Est. Cost", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Percentage", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Order Status", style={'width': '16%', 'display': 'inline-block', 'fontWeight': 'bold'}),
             ], style={'marginBottom': '10px', 'backgroundColor': '#f0f0f0', 'padding': '10px'}),
             
             # 股票資訊列
             *[
                 html.Div([
-                    daq.ToggleSwitch( id='order-toggle', value=True, label=['Off', 'On'], style={'width': '14%', 'display': 'inline-block'} ),       
-                    html.Div(stock_id, style={'width': '14%', 'display': 'inline-block'}), # 股票代號
-                    html.Div(stock_info['股票'], style={'width': '14%', 'display': 'inline-block'}), # 股票名稱
+                    daq.ToggleSwitch( 
+                        id={'type': 'trade-toggle', 'index': stock_id}, 
+                        value=True, 
+                        label=['Off', 'On'], 
+                        style={'width': '10%', 'display': 'inline-block'} 
+                    ),       
+                    html.Div(stock_id, style={'width': '10%', 'display': 'inline-block'}), # 股票代號
+                    html.Div(stock_info['股票'], style={'width': '10%', 'display': 'inline-block'}), # 股票名稱
                     # 價格輸入
                     html.Div(
                         dcc.Input(
@@ -649,7 +713,7 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入價格',
                             style={'width': '80%'}
                         ),
-                        style={'width': '14%', 'display': 'inline-block'}
+                        style={'width': '10%', 'display': 'inline-block'}
                     ),
                     # 張數輸入
                     html.Div(
@@ -659,43 +723,348 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入張數',
                             style={'width': '80%'}
                         ),
-                        style={'width': '14%', 'display': 'inline-block'}
+                        style={'width': '10%', 'display': 'inline-block'}
                     ),
-                    html.Label('0', style={'width': '14%', 'display': 'inline-block'}),
-                    html.Label('Not ordered', style={'width': '14%', 'display': 'inline-block'}),
+                    # 零股顯示
+                    html.Div(id={'type': 'odd-lots-display', 'index': stock_id}, children='0', style={'width': '10%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'cost-display', 'index': stock_id}, children='0', style={'width': '12%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'percentage-display', 'index': stock_id}, children='0%', style={'width': '12%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'status-display', 'index': stock_id}, children='Not ordered', style={'width': '16%', 'display': 'inline-block'}),
 
                 ], style={'marginBottom': '5px', 'padding': '5px', 'borderBottom': '1px solid #ddd'})
                 for stock_id, stock_info in stocks.items()
-            ]
+            ],
+            # 總計行
+            html.Div([
+                html.Div("", style={'width': '10%', 'display': 'inline-block'}),
+                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
+                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
+                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
+                html.Div("總計：", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold', 'textAlign': 'right'}),
+                html.Div("", style={'width': '10%', 'display': 'inline-block'}),
+                html.Div(id='total-cost-display', children='$0', style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
+                html.Div("100%", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
+                html.Div("", style={'width': '16%', 'display': 'inline-block'}),
+            ], style={'marginTop': '10px', 'padding': '10px', 'backgroundColor': '#f8f8f8', 'borderTop': '2px solid #ddd'})
         ], style={'maxHeight': '400px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'})
 
+# 合併後的 Refresh 按鈕回調邏輯
 @app.callback(
-    Output('order-status', 'children'),
-    Input('confirm-order-button', 'n_clicks'),
-    State('buy-sell-toggle', 'value'),
-    State('group-dropdown', 'value'),
-    State({'type': 'price-input', 'index': ALL}, 'value'),
-    State({'type': 'quantity-input', 'index': ALL}, 'value'),
-    State({'type': 'price-input', 'index': ALL}, 'id'),
+    [Output({'type': 'price-input', 'index': ALL}, 'value'),
+     Output({'type': 'quantity-input', 'index': ALL}, 'value')],
+    Input('refersh-button', 'n_clicks'),
+    [State('buy-sell-toggle', 'value'),
+     State('Funding_strategy', 'value'),
+     State('group-dropdown', 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'id'),
+     State({'type': 'price-input', 'index': ALL}, 'id')],
+    prevent_initial_call=True
 )
-def confirm_order(n_clicks, buy_sell, selected_group, prices, quantities, ids):
-    """處理下單邏輯"""
-    if n_clicks == 0:
-        return ''
-    if not selected_group or not prices or not quantities:
-        return "請填寫完整的下單資訊！"
+def refresh_stock_data(n_clicks, buy_sell, funding_strategy, selected_group, trade_toggles, trade_ids, price_ids):
+    """合併的 Refresh 按鈕處理邏輯"""
+    if n_clicks == 0 or not selected_group:
+        raise PreventUpdate
+    
+    # 獲取股票代號列表
+    stock_ids = [trade_id['index'] for trade_id in trade_ids]
+    
+    # 初始化價格和張數列表
+    prices = []
+    quantities = []
+    
+    for i, stock_id in enumerate(stock_ids):
+        # 只處理 Trade Toggle 為 True 的股票
+        if trade_toggles[i]:
+            # 從即時資料中獲取買賣價
+            if stock_id in g_track_stock_realtime_data and 'realtime' in g_track_stock_realtime_data[stock_id]:
+                if g_track_stock_realtime_data[stock_id]['success']:
+                    realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
+                    
+                    # 根據買賣方向設定價格
+                    if buy_sell:  # Buy mode - 使用賣價一檔 (ask_price)
+                        if 'best_ask_price' in realtime_data and len(realtime_data['best_ask_price']) > 0:
+                            price = float(realtime_data['best_ask_price'][0]) if realtime_data['best_ask_price'][0] != '-' else 0
+                        else:
+                            price = 0
+                    else:  # Sell mode - 使用買價一檔 (bid_price)
+                        if 'best_bid_price' in realtime_data and len(realtime_data['best_bid_price']) > 0:
+                            price = float(realtime_data['best_bid_price'][0]) if realtime_data['best_bid_price'][0] != '-' else 0
+                        else:
+                            price = 0
+                    
+                    prices.append(price)
+                else:
+                    prices.append(0)
+            else:
+                prices.append(0)
+        else:
+            prices.append(None)  # Trade Toggle 為 False 的股票不填入價格
+    
+    # 處理張數邏輯
+    if funding_strategy:  # Average 模式
+        # 沒有投資金額，使用預設金額
+        try:
+            # 計算有效股票數量（Trade Toggle 為 True 且價格大於 0）
+            valid_stocks = sum(1 for i, price in enumerate(prices) 
+                              if trade_toggles[i] and price is not None and price > 0)
+            
+            if valid_stocks > 0:
+                # 假設每檔股票分配 10000 元
+                default_amount_per_stock = 10000
+                
+                for i, price in enumerate(prices):
+                    if trade_toggles[i] and price is not None and price > 0:
+                        # 計算張數（每張1000股）
+                        quantity = int(default_amount_per_stock / (price * 1000))
+                        quantities.append(quantity)
+                    else:
+                        quantities.append(None)
+            else:
+                quantities = [None] * len(stock_ids)
+        except:
+            quantities = [None] * len(stock_ids)
+    else:  # Manual 模式
+        # Manual 模式只刷新價格，不修改張數
+        quantities = [None] * len(stock_ids)
+    
+    return prices, quantities
+
+# 處理有投資金額的 Average 模式 Refresh
+@app.callback(
+    Output({'type': 'quantity-input', 'index': ALL}, 'value', allow_duplicate=True),
+    Input('refersh-button', 'n_clicks'),
+    [State('buy-sell-toggle', 'value'),
+     State('Funding_strategy', 'value'),
+     State('average-amount', 'value'),
+     State('group-dropdown', 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'id'),
+     State({'type': 'price-input', 'index': ALL}, 'value')],
+    prevent_initial_call=True
+)
+def refresh_with_average_amount(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, trade_ids, current_prices):
+    """處理有投資金額時的 Average 模式 Refresh 邏輯"""
+    if (n_clicks == 0 or not selected_group or not funding_strategy or 
+        average_amount is None or average_amount <= 0):
+        raise PreventUpdate
+    
+    # 獲取股票代號列表
+    stock_ids = [trade_id['index'] for trade_id in trade_ids]
+    quantities = []
+    
+    # 計算有效股票數量（Trade Toggle 為 True 且價格大於 0）
+    valid_stocks = sum(1 for i, price in enumerate(current_prices) 
+                      if (i < len(trade_toggles) and trade_toggles[i] and 
+                          price is not None and price > 0))
+    
+    if valid_stocks > 0:
+        # 平均分配投資金額
+        amount_per_stock = average_amount / valid_stocks
+        
+        for i, price in enumerate(current_prices):
+            if (i < len(trade_toggles) and trade_toggles[i] and 
+                price is not None and price > 0):
+                # 計算張數（每張1000股）
+                quantity = int(amount_per_stock / (price * 1000))
+                quantities.append(quantity)
+            else:
+                quantities.append(None)
+    else:
+        quantities = [None] * len(stock_ids)
+    
+    return quantities
+
+# 添加實時更新成本顯示的回調
+@app.callback(
+    [Output({'type': 'cost-display', 'index': ALL}, 'children'),
+     Output({'type': 'percentage-display', 'index': ALL}, 'children'),
+     Output({'type': 'odd-lots-display', 'index': ALL}, 'children'),
+     Output('total-cost-display', 'children')],
+    [Input({'type': 'price-input', 'index': ALL}, 'value'),
+     Input({'type': 'quantity-input', 'index': ALL}, 'value'),
+     Input('Funding_strategy', 'value'),
+     Input('average-amount', 'value')],
+    prevent_initial_call=True
+)
+def update_cost_display(prices, quantities, funding_strategy, average_amount):
+    """實時更新估算成本、百分比、零股和總計"""
+    costs = []
+    percentages = []
+    odd_lots = []
+    total_cost = 0
+    
+    # 首先計算總成本
+    individual_costs = []
+    for price, quantity in zip(prices, quantities):
+        if price is not None and quantity is not None and price > 0 and quantity > 0:
+            cost = price * quantity * 1000  # 每張1000股
+            individual_costs.append(cost)
+            total_cost += cost
+        else:
+            individual_costs.append(0)
+    
+    # 計算有效股票數量（用於平均投資策略的零股計算）
+    valid_stock_count = 0
+    if funding_strategy and average_amount and average_amount > 0:
+        valid_stock_count = sum(1 for price, quantity in zip(prices, quantities) 
+                               if price is not None and quantity is not None and price > 0 and quantity > 0)
+    
+    # 然後計算每個股票的成本、百分比和零股
+    for i, (price, quantity) in enumerate(zip(prices, quantities)):
+        if price is not None and quantity is not None and price > 0 and quantity > 0:
+            cost = individual_costs[i]
+            costs.append(f"${cost:,.0f}")
+            
+            # 計算百分比
+            if total_cost > 0:
+                percentage = (cost / total_cost) * 100
+                percentages.append(f"{percentage:.1f}%")
+            else:
+                percentages.append("0%")
+            
+            # 計算零股：根據策略決定計算方式
+            if funding_strategy and average_amount and average_amount > 0 and valid_stock_count > 0:
+                # 平均投資策略：計算平均分配後每檔可購買的總股數
+                amount_per_stock = average_amount / valid_stock_count
+                total_shares = int(amount_per_stock / price)
+                odd_lots.append(f"{total_shares}")
+            else:
+                # 一般計算：用當前投資金額可以買多少股（不足一張的部分）
+                total_shares = int(cost / price)  # 總共可以買多少股
+                odd_lot_shares = total_shares % 1000  # 零股部分（不足一張的股數）
+                odd_lots.append(f"{odd_lot_shares}")
+        else:
+            costs.append("0")
+            percentages.append("0%")
+            odd_lots.append("0")
+    
+    return costs, percentages, odd_lots, f"${total_cost:,.0f}"
+
+# 顯示確認對話框
+@app.callback(
+    [Output('order-confirmation-modal', 'style'),
+     Output('confirmation-details', 'children')],
+    Input('confirm-order-button', 'n_clicks'),
+    [State('buy-sell-toggle', 'value'),
+     State('Funding_strategy', 'value'),
+     State('average-amount', 'value'),
+     State('group-dropdown', 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'value'),
+     State({'type': 'price-input', 'index': ALL}, 'value'),
+     State({'type': 'quantity-input', 'index': ALL}, 'value'),
+     State({'type': 'price-input', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, ids):
+    """顯示確認對話框"""
+    if n_clicks == 0 or not selected_group or not prices or not quantities:
+        return {'display': 'none'}, ''
     
     action = "買進" if buy_sell else "賣出"
-    orders = []
-    for price, quantity, stock_id in zip(prices, quantities, ids):
-        if price is not None and quantity is not None:
-            orders.append(f"{action} {stock_id['index']}，價格：{price}，張數：{quantity}")
+    order_type = "限價單" if True else "市價單"  # 假設都是限價單
     
-    if not orders:
-        return "請填寫完整的下單資訊！"
+    # 計算訂單詳情
+    order_details = []
+    total_cost = 0
     
-    # 模擬下單成功
-    return f"下單成功！\n" + "\n".join(orders)
+    # 檢查是否使用平均投資策略
+    if funding_strategy:
+        if average_amount:
+            order_details.append(html.P(f"💰 投資策略：平均投資，總投資金額：${average_amount:,.0f}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
+        else:
+            order_details.append(html.P(f"💰 投資策略：平均投資", style={'margin': '5px 0', 'fontWeight': 'bold'}))
+    
+    order_details.append(html.P(f"📊 交易方向：{action}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
+    order_details.append(html.P(f"📋 訂單類型：{order_type}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
+    order_details.append(html.Hr())
+    
+    # 添加股票訂單詳情
+    stock_orders = []
+    for i, (price, quantity, stock_id) in enumerate(zip(prices, quantities, ids)):
+        if (i < len(trade_toggles) and trade_toggles[i] and 
+            price is not None and quantity is not None and 
+            price > 0 and quantity > 0):
+            cost = price * quantity * 1000
+            total_cost += cost
+            stock_orders.append(
+                html.Div([
+                    html.Span(f"🏦 {stock_id['index']}", style={'fontWeight': 'bold', 'marginRight': '10px'}),
+                    html.Span(f"價格：${price:,.2f}", style={'marginRight': '10px'}),
+                    html.Span(f"張數：{quantity}", style={'marginRight': '10px'}),
+                    html.Span(f"成本：${cost:,.0f}", style={'color': 'red', 'fontWeight': 'bold'})
+                ], style={'margin': '5px 0', 'padding': '5px', 'backgroundColor': '#f8f9fa', 'borderRadius': '3px'})
+            )
+    
+    if not stock_orders:
+        return {'display': 'none'}, ''
+    
+    order_details.extend(stock_orders)
+    order_details.append(html.Hr())
+    order_details.append(
+        html.P(f"💵 總預估成本：${total_cost:,.0f}", 
+               style={'margin': '10px 0', 'fontWeight': 'bold', 'fontSize': '18px', 'color': 'red', 'textAlign': 'center'})
+    )
+    
+    return {'display': 'block'}, order_details
+
+# 處理確認/取消按鈕
+@app.callback(
+    [Output('order-confirmation-modal', 'style', allow_duplicate=True),
+     Output('order-status', 'children')],
+    [Input('confirm-final-order', 'n_clicks'),
+     Input('cancel-order', 'n_clicks')],
+    [State('buy-sell-toggle', 'value'),
+     State('Funding_strategy', 'value'),
+     State('average-amount', 'value'),
+     State('group-dropdown', 'value'),
+     State({'type': 'trade-toggle', 'index': ALL}, 'value'),
+     State({'type': 'price-input', 'index': ALL}, 'value'),
+     State({'type': 'quantity-input', 'index': ALL}, 'value'),
+     State({'type': 'price-input', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, ids):
+    """處理確認或取消訂單"""
+    from dash import callback_context
+    
+    if not callback_context.triggered:
+        return {'display': 'none'}, ''
+    
+    button_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    
+    if button_id == 'cancel-order':
+        return {'display': 'none'}, '訂單已取消'
+    
+    elif button_id == 'confirm-final-order':
+        # 執行實際下單邏輯
+        if not selected_group or not prices or not quantities:
+            return {'display': 'none'}, "請填寫完整的下單資訊！"
+        
+        action = "買進" if buy_sell else "賣出"
+        orders = []
+        
+        # 檢查是否使用平均投資策略
+        if funding_strategy:
+            if average_amount:
+                orders.append(f"使用平均投資策略，總投資金額：${average_amount:,.0f}")
+            else:
+                orders.append(f"使用平均投資策略")
+        
+        # 只處理 Trade Toggle 為 True 的股票
+        for i, (price, quantity, stock_id) in enumerate(zip(prices, quantities, ids)):
+            if (i < len(trade_toggles) and trade_toggles[i] and 
+                price is not None and quantity is not None and 
+                price > 0 and quantity > 0):
+                orders.append(f"{action} {stock_id['index']}，價格：${price:,.2f}，張數：{quantity}")
+        
+        if not orders:
+            return {'display': 'none'}, "請填寫完整的下單資訊！"
+        
+        # 模擬下單成功
+        return {'display': 'none'}, f"✅ 下單成功！\n" + "\n".join(orders)
+    
+    return {'display': 'none'}, ''
 
 
 if __name__ == '__main__':
