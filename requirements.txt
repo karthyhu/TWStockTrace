@@ -6,3 +6,4 @@ pandas
 Pillow
 plotly
 kaleido
+re

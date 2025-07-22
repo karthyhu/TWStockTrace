@@ -1,10 +1,10 @@
 import json
 import os
 
-def gan_range(filename: str = None):
+def gan_range(date: str = None):
     directory = './raw_stock_data/daily'
 
-    with open(os.path.join(directory, filename), 'r', encoding='utf-8') as f:
+    with open(os.path.join(directory, f'{date}.json'), 'r', encoding='utf-8') as f:
         t = json.load(f)
     
     for i in range(0, len(t)):
@@ -27,7 +27,7 @@ def gan_range(filename: str = None):
 
     with open(f'{directory}/today.json', 'w', encoding='utf-8') as f:
         f.write(t)
-    with open(f'{directory}/{filename}', 'w', encoding='utf-8') as f:
+    with open(f'{directory}/{date}.json', 'w', encoding='utf-8') as f:
         f.write(t)
     return t
 

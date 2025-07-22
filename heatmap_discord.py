@@ -19,7 +19,7 @@ load_dotenv()
 def load_stock_categories():
     """載入股票分類資料"""
     try:
-        with open('./stock_realtime_heatmap/stock_data.json', 'r', encoding='utf-8') as f:
+        with open('./stock_realtime_heatmap/my_stock_category.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         print("股票分類檔案不存在")

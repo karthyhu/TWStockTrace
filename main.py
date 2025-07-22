@@ -4,7 +4,7 @@ import os
 import calstockgan
 import trace_manager
 import heatmap_discord
-import TOC_manager
+import TPEX_manager
 
 def check_and_delete_old_files(directory, max_files=30):
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -26,8 +26,8 @@ def DownlodStockData():
     with open('./raw_stock_data/daily/today.json', 'w', encoding='utf-8') as f:
         json.dump(jsondata, f, ensure_ascii=False, indent=0)
     
-    filename = f'{jsondata[0]["Date"]}.json'
-    return filename
+    date = f'{jsondata[0]["Date"]}'
+    return date
 
 def send_discord_notification():
     """發送當日股票漲跌幅前十名到 Discord"""
@@ -110,13 +110,14 @@ def send_discord_notification():
 
 if __name__ == "__main__":
     check_and_delete_old_files('./raw_stock_data/daily')
-    filename = DownlodStockData()
-    calstockgan.gan_range(filename)
-    
+    date = DownlodStockData()
+    print(f'update date data...: {date}')
+    calstockgan.gan_range(date)
+
     # 更新 trace.json
     print("\n" + "="*50)
     print("📊 開始更新股票追蹤資料...")
-    trace_manager.update_trace_json(filename)
+    trace_manager.update_trace_json(date)
     print("="*50 + "\n")
     
     send_discord_notification()
@@ -137,6 +138,6 @@ if __name__ == "__main__":
     
     # 更新 上櫃 資料
     print("開始更新上櫃資料...")
-    TOC_manager.TOC_manager().daily_trace()
+    TPEX_manager.daily_trace(date)
     
     print("Update completed.")
