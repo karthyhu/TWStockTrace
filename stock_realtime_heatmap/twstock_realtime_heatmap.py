@@ -14,7 +14,7 @@ import plotly.io as pio
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
-
+from test_esun_api import esun_login_with_auth
 
 # Global variables
 g_notified_status = {}
@@ -418,6 +418,60 @@ app.layout = html.Div([
     # 7. Stock Trading Interface ----------------------------
     html.Div([
         html.H1("Stock Trading Interface", style={'textAlign': 'center', 'marginTop': 30}),
+        
+        # 7-0. Authentication Section ----------------------------
+        html.Div([
+            html.Div([
+                html.Div([
+                    html.Label("Cert. Password", style={'marginRight': '10px', 'fontWeight': 'bold'}),
+                    dcc.Input(
+                        id='auth-code-input',
+                        type='text',
+                        placeholder='請輸入您的憑證密碼',
+                        style={'width': '200px', 'padding': '5px'}
+                    )
+                ], style={'display': 'inline-block', 'marginRight': '30px'}),
+                
+                html.Div([
+                    html.Label("Account Password：", style={'marginRight': '10px', 'fontWeight': 'bold'}),
+                    dcc.Input(
+                        id='password-input',
+                        type='password',
+                        placeholder='請輸入您玉山證券的登入密碼',
+                        style={'width': '200px', 'padding': '5px'}
+                    )
+                ], style={'display': 'inline-block', 'marginRight': '30px'}),
+                
+                html.Button(
+                    "Login",
+                    id='login-button',
+                    n_clicks=0,
+                    style={
+                        'backgroundColor': '#007bff',
+                        'color': 'white',
+                        'border': 'none',
+                        'padding': '8px 20px',
+                        'borderRadius': '5px',
+                        'cursor': 'pointer',
+                        'fontSize': '14px'
+                    }
+                )
+            ], style={'textAlign': 'center', 'marginBottom': '15px'}),
+            
+            # 登入狀態顯示
+            html.Div(id='login-status', style={
+                'textAlign': 'center', 
+                'marginBottom': '20px',
+                'fontWeight': 'bold'
+            })
+        ], style={
+            'backgroundColor': '#f8f9fa',
+            'border': '1px solid #dee2e6',
+            'borderRadius': '8px',
+            'padding': '20px',
+            'marginBottom': '30px'
+        }),
+        
         # 7-1. Order Type toggle ----------------------------
         html.Div([
             html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
@@ -478,6 +532,30 @@ app.layout = html.Div([
         )
     ])
 ])
+
+# 處理登入功能
+@app.callback(
+    Output('login-status', 'children'),
+    Input('login-button', 'n_clicks'),
+    [State('auth-code-input', 'value'),
+     State('password-input', 'value')],
+    prevent_initial_call=True
+)
+def handle_login(n_clicks, auth_code, password):
+    """處理登入驗證"""
+    if n_clicks == 0:
+        return ''
+    
+    if not auth_code or not password:
+        return html.Div("❌ 請輸入憑證密碼和證券登入密碼", style={'color': 'red'})
+    
+    result , result_str , sdk = esun_login_with_auth(auth_code , password)
+
+    # 模擬登入驗證過程
+    if result:
+        return html.Div("✅ 登入成功！", style={'color': 'green'})
+    else:
+        return html.Div("❌ 登入失敗：" + f"{result_str}" , style={'color': 'red'})
 
 
 @app.callback(
