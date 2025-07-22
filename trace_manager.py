@@ -363,8 +363,9 @@ class TraceManager:
             print("\n❌ trace.json 保存失敗！")
             return False
 
-def update_trace_json(today_filename):
+def update_trace_json(date):
     """主要入口函數，供 main.py 調用"""
+    today_filename = date.replace('/', '') + '.json'
     trace_manager = TraceManager()
     return trace_manager.update_trace_data(today_filename)
 
