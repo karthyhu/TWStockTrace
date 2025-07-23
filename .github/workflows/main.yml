@@ -19,13 +19,33 @@ jobs:
           python-version: '3.10'
           cache: 'pip'  # 啟用 pip 快取
 
+      - name: Cache system packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+          key: ${{ runner.os }}-apt-packages-${{ hashFiles('.github/workflows/main.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-packages-
+
       - name: Install system dependencies and Chinese fonts
         run: |
-          sudo apt-get update
-          sudo apt-get install -y fontconfig
-          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
-          sudo apt-get install -y fonts-wqy-microhei fonts-wqy-zenhei
-          sudo fc-cache -fv
+          # 只有在快取未命中時才更新套件列表
+          if [ ! -f /var/cache/apt/pkgcache.bin ] || [ $(find /var/cache/apt/pkgcache.bin -mtime +1) ]; then
+            sudo apt-get update
+          fi
+          
+          # 檢查字體是否已安裝，避免重複安裝
+          if ! fc-list | grep -q "Noto Sans CJK"; then
+            sudo apt-get install -y fontconfig
+            sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+            sudo apt-get install -y fonts-wqy-microhei fonts-wqy-zenhei
+            sudo fc-cache -fv
+            echo "✅ 中文字體安裝完成"
+          else
+            echo "✅ 中文字體已存在，跳過安裝"
+          fi
           
       - name: Install dependencies
         run: |
