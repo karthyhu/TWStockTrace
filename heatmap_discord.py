@@ -5,8 +5,13 @@ import datetime
 import io
 import base64
 from collections import defaultdict
+
+# 設置 matplotlib 後端 (在導入 matplotlib 之前)
+import matplotlib
+matplotlib.use('Agg')  # 使用非互動後端
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
 import pandas as pd
 import seaborn as sns
 import plotly.express as px
@@ -26,25 +31,84 @@ def load_stock_categories():
         return None
 
 def load_today_stock_data():
-    """載入今日股票資料"""
+    """載入今日股票資料 (新格式)"""
     try:
-        with open('./raw_stock_data/daily/today.json', 'r', encoding='utf-8') as f:
-            return json.load(f)
+        with open('./raw_stock_data/daily/twse/today.json', 'r', encoding='utf-8') as f:
+            stock_data = json.load(f)
+            
+        # 只處理新格式
+        if not isinstance(stock_data, dict) or 'data' not in stock_data or 'fields' not in stock_data:
+            print("❌ 資料格式錯誤，需要新格式 (包含 'data' 和 'fields' 欄位)")
+            return None
+            
+        # 新格式：轉換為列表格式以便處理
+        converted_data = []
+        fields = stock_data['fields']
+        
+        for code, values in stock_data['data'].items():
+            try:
+                if len(values) >= len(fields):
+                    stock_item = {}
+                    for i, field in enumerate(fields):
+                        stock_item[field] = values[i]
+                    # 添加日期資訊
+                    stock_item['Date'] = stock_data['date']
+                    converted_data.append(stock_item)
+            except (IndexError, TypeError) as e:
+                print(f"⚠️ 轉換股票 {code} 資料時發生錯誤: {e}")
+                continue
+        
+        print(f"✅ 成功載入 {len(converted_data)} 檔股票資料")
+        return converted_data
+            
     except FileNotFoundError:
-        print("今日股票資料檔案不存在")
+        print("❌ 今日股票資料檔案不存在")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON 解析錯誤: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ 載入股票資料時發生錯誤: {e}")
         return None
 
 def create_stock_lookup(today_data):
-    """建立股票代碼查詢字典"""
+    """建立股票代碼查詢字典 (新格式)"""
     stock_lookup = {}
+    
+    def safe_float(value):
+        """安全轉換為浮點數"""
+        try:
+            if isinstance(value, str):
+                return float(value.replace(',', ''))
+            return float(value) if value is not None else 0.0
+        except (ValueError, TypeError):
+            return 0.0
+    
+    def safe_int(value):
+        """安全轉換為整數"""
+        try:
+            if isinstance(value, str):
+                return int(value.replace(',', ''))
+            return int(value) if value is not None else 0
+        except (ValueError, TypeError):
+            return 0
+    
     for stock in today_data:
-        stock_lookup[stock['Code']] = {
-            'Name': stock['Name'],
-            'Range': stock['Range'],
-            'ClosingPrice': stock['ClosingPrice'],
-            'Change': stock['Change'],
-            'TradeVolume': stock['TradeVolume']
-        }
+        try:
+            code = stock.get('Code', '')
+            if code:
+                stock_lookup[code] = {
+                    'Name': stock.get('Name', ''),
+                    'Range': safe_float(stock.get('Range', 0)),
+                    'ClosingPrice': safe_float(stock.get('ClosingPrice', 0)),
+                    'Change': safe_float(stock.get('Change', 0)),
+                    'TradeVolume': safe_int(stock.get('TradeVolume', 0))
+                }
+        except Exception as e:
+            print(f"⚠️ 處理股票 {stock.get('Code', 'Unknown')} 時發生錯誤: {e}")
+            continue
+    
+    print(f"✅ 建立 {len(stock_lookup)} 檔股票查詢字典")
     return stock_lookup
 
 def calculate_category_performance(stock_categories, stock_lookup):
@@ -90,8 +154,19 @@ def calculate_category_performance(stock_categories, stock_lookup):
 
 def generate_heatmap_image(category_summary, date_str):
     """生成熱力圖圖片"""
-    # 設置中文字體和emoji支持
-    plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+    import platform
+    
+    # 根據作業系統設置中文字體
+    if platform.system() == 'Linux':
+        # Linux (GitHub Actions) 環境
+        plt.rcParams['font.sans-serif'] = ['Noto Sans CJK TC', 'WenQuanYi Micro Hei', 'WenQuanYi Zen Hei', 'DejaVu Sans']
+    elif platform.system() == 'Windows':
+        # Windows 環境
+        plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'SimHei', 'Microsoft YaHei', 'DejaVu Sans']
+    else:
+        # macOS 或其他系統
+        plt.rcParams['font.sans-serif'] = ['PingFang TC', 'Heiti TC', 'Arial Unicode MS', 'DejaVu Sans']
+    
     plt.rcParams['axes.unicode_minus'] = False
     plt.rcParams['font.size'] = 10
     
@@ -358,6 +433,15 @@ def generate_treemap_heatmap(category_summary, stock_lookup, date_str):
                          "<extra></extra>"
         )
         
+        # 根據作業系統設置字體
+        import platform
+        if platform.system() == 'Linux':
+            font_family = "Noto Sans CJK TC, Arial"
+        elif platform.system() == 'Windows':
+            font_family = "Microsoft JhengHei, Arial"
+        else:
+            font_family = "PingFang TC, Arial"
+        
         # 更新佈局
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',
@@ -365,8 +449,8 @@ def generate_treemap_heatmap(category_summary, stock_lookup, date_str):
             margin=dict(t=80, l=20, r=20, b=20),
             height=800,
             width=1200,
-            font=dict(family="Microsoft JhengHei, Arial", size=12),
-            title_font=dict(size=20, family="Microsoft JhengHei, Arial"),
+            font=dict(family=font_family, size=12),
+            title_font=dict(size=20, family=font_family),
             coloraxis_colorbar=dict(
                 title="漲跌幅 (%)",
                 tickformat='.1f',
@@ -439,7 +523,7 @@ def send_treemap_to_discord(category_summary, stock_lookup, date_str, webhook_ur
         return False
 
 def send_heatmap_to_discord(send_image=True, use_treemap=False):
-    """發送熱力圖到 Discord
+    """發送熱力圖到 Discord (新格式專用)
     
     Args:
         send_image (bool): True 發送圖片，False 發送文字訊息
@@ -449,68 +533,93 @@ def send_heatmap_to_discord(send_image=True, use_treemap=False):
         # 讀取 webhook URL
         webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
         if not webhook_url:
-            print("Discord webhook URL not found. Skipping heatmap notification.")
+            print("⚠️ 未設定 DISCORD_WEBHOOK_URL 環境變數，跳過熱力圖通知")
             return False
+        
+        print("📊 開始處理產業熱力圖...")
         
         # 載入資料
         stock_categories = load_stock_categories()
         today_data = load_today_stock_data()
         
-        if not stock_categories or not today_data:
-            print("無法載入必要的資料檔案")
+        if not stock_categories:
+            print("❌ 無法載入股票分類資料")
+            return False
+            
+        if not today_data:
+            print("❌ 無法載入今日股票資料")
             return False
         
         # 建立股票查詢字典
         stock_lookup = create_stock_lookup(today_data)
+        if not stock_lookup:
+            print("❌ 無法建立股票查詢字典")
+            return False
         
         # 計算類別表現
         category_summary = calculate_category_performance(stock_categories, stock_lookup)
-        
         if not category_summary:
-            print("沒有找到相符的股票資料")
+            print("❌ 沒有找到相符的股票資料或計算類別表現失敗")
             return False
         
-        # 格式化訊息
-        date_str = today_data[0]['Date']
+        print(f"✅ 成功分析 {len(category_summary)} 個產業類別")
+        
+        # 取得日期 (從新格式取得)
+        date_str = today_data[0].get('Date', '')
+        if not date_str:
+            print("⚠️ 無法取得日期資訊")
+            date_str = '1140724'  # 使用預設日期
+        
+        success = False
         
         if send_image:
             # 選擇發送treemap或傳統圖表
             if use_treemap:
+                print("📊 嘗試發送 Treemap 熱力圖...")
                 success = send_treemap_to_discord(category_summary, stock_lookup, date_str, webhook_url)
                 if success:
-                    print("📊 產業熱力圖 (Treemap) Discord 通知發送成功！")
+                    print("✅ 產業熱力圖 (Treemap) Discord 通知發送成功！")
                     return True
                 else:
-                    print("產業熱力圖 (Treemap) 發送失敗，嘗試發送傳統圖表...")
+                    print("⚠️ Treemap 發送失敗，嘗試發送傳統圖表...")
                     use_treemap = False
             
             if not use_treemap:
+                print("📈 嘗試發送傳統圖表...")
                 # 發送傳統圖表版本
                 success = send_heatmap_image_to_discord(category_summary, date_str, webhook_url)
                 if success:
-                    print("🔥 產業熱力圖圖片 Discord 通知發送成功！")
+                    print("✅ 產業熱力圖圖片 Discord 通知發送成功！")
                     return True
                 else:
-                    print("產業熱力圖圖片發送失敗，嘗試發送文字版本...")
+                    print("⚠️ 圖片發送失敗，嘗試發送文字版本...")
                     # 如果圖片發送失敗，則發送文字版本
                     send_image = False
         
         if not send_image:
+            print("📝 嘗試發送文字版本...")
             # 發送文字版本
             embed = format_heatmap_message(category_summary, date_str)
             payload = {"embeds": [embed]}
-            response = requests.post(webhook_url, json=payload)
             
-            if response.status_code == 204:
-                print("🔥 產業熱力圖文字 Discord 通知發送成功！")
-                return True
-            else:
-                print(f"產業熱力圖 Discord 通知發送失敗。狀態碼: {response.status_code}")
-                print(f"回應: {response.text}")
+            try:
+                response = requests.post(webhook_url, json=payload, timeout=10)
+                
+                if response.status_code == 204:
+                    print("✅ 產業熱力圖文字 Discord 通知發送成功！")
+                    return True
+                else:
+                    print(f"❌ 文字版本發送失敗。狀態碼: {response.status_code}")
+                    print(f"回應: {response.text}")
+                    return False
+            except requests.RequestException as e:
+                print(f"❌ 網路請求錯誤: {e}")
                 return False
             
     except Exception as e:
-        print(f"發送產業熱力圖時發生錯誤: {e}")
+        print(f"❌ 發送產業熱力圖時發生未知錯誤: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def save_treemap_locally(category_summary, stock_lookup, date_str, filename="treemap_preview.html"):
