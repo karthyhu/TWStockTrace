@@ -74,7 +74,11 @@ def send_discord_category_notification(treemap_df, fig):
 
             # 檢查冷卻時間
             if cat in g_last_notification_time:
-                if current_timestamp - g_last_notification_time[cat] < COOLDOWN_SECONDS:
+                cooling_time = current_timestamp - g_last_notification_time[cat]
+                if cooling_time < COOLDOWN_SECONDS:
+                    previous_data = g_notified_status.get(cat, {"status": "neutral", "last_mean": 0})
+                    previous_mean = previous_data["last_mean"]
+                    print(f"{color_code}[DEBUG] Cooldown {round(cooling_time , 0)} sec {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
                     continue
             
             # 獲取前次數據
@@ -84,13 +88,13 @@ def send_discord_category_notification(treemap_df, fig):
             
             # 緩衝區檢查
             if abs(mean - previous_mean) < BUFFER_THRESHOLD:
-                print(f"{color_code}[DEBUG] Skipping notification for {cat}: mean={mean}, last_mean={previous_mean}\033[0m")
+                print(f"{color_code}[DEBUG] Not significant change {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
                 continue
 
             # 判斷是否需要通知
             if -3.5 < mean < 3.5:
-                print(f"{color_code}[DEBUG] Neutral category {cat}: mean={mean}, last_mean={previous_mean}\033[0m")
-                g_notified_status[cat] = {"status": "neutral", "last_mean": mean}
+                print(f"{color_code}[DEBUG] Neutral category {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
+                # g_notified_status[cat] = {"status": "neutral", "last_mean": mean} -> 不要加，會導致緩衝區無法在界線即時通報
                 continue
 
             # 判斷狀態變化
@@ -109,7 +113,7 @@ def send_discord_category_notification(treemap_df, fig):
             else:
                 current_status = "neutral"
 
-            print(f"{color_code}[DEBUG] Notification check for {cat}: mean={mean}, last_mean={previous_mean}, status={current_status}\033[0m")
+            print(f"{color_code}[DEBUG] Notification check {cat}: mean={mean} , {previous_mean} , status={current_status}\033[0m")
 
             # 僅在狀態變化時通知
             if current_status != previous_status:
@@ -122,9 +126,9 @@ def send_discord_category_notification(treemap_df, fig):
                 # 更新記錄
                 g_notified_status[cat] = {"status": current_status, "last_mean": mean}
                 g_last_notification_time[cat] = current_timestamp
-            else:
+            # else:
                 # 更新漲幅記錄但不通知
-                g_notified_status[cat]["last_mean"] = mean
+                # g_notified_status[cat]["last_mean"] = mean -> 不要加，會導致緩衝區無法在界線即時通報
 
         if text:
             embed['fields'].append({"name": "", "value": text, "inline": False})
@@ -364,7 +368,7 @@ def update_realtime_data(stocks_df):
                     current_price = float(realtime_data['latest_trade_price'])
                 
                 last_day_price = stocks_df.loc['last_day_price' , stock_id]
-                current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 1)
+                current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 2)
                 
                 stocks_df.loc['realtime_price' , stock_id] = current_price
                 stocks_df.loc['realtime_change' , stock_id] = current_change_percent
@@ -378,7 +382,8 @@ app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
 app.layout = html.Div([
     # 1. Taiwan Stock Realtime Heatmap 大標題 ----------------------------
-    html.H1("Taiwan Stock Realtime Heatmap", style={'textAlign': 'center', 'marginBottom': 30}),
+    html.H1("Taiwan Stock Realtime Heatmap", 
+            style={'textAlign': 'center', 'marginBottom': 30}),
 
     # 2. Display Mode ----------------------------
     html.Div([
@@ -387,7 +392,7 @@ app.layout = html.Div([
             options=[
                 {'label': 'Normal Display', 'value': 'equal'},
                 {'label': 'Market Cap Display', 'value': 'market'},
-                {'label': 'Bubble Chart', 'value': 'bubble'}  # 新增 Bubble Chart 選項
+                {'label': 'Bubble Chart', 'value': 'bubble'}
             ],
             id='size-mode',
             value='equal',
@@ -399,7 +404,12 @@ app.layout = html.Div([
     # 3. Enable Notifications ----------------------------
     html.Div([
         html.Label('Enable Notifications：', style={'marginRight': '5px', 'display': 'inline-block'}),
-        daq.ToggleSwitch(id='enable-notifications', value=False, label=['Disable', 'Enable'], style={'display': 'inline-block'})  # 使用 dash_daq.ToggleSwitch
+        daq.ToggleSwitch(
+            id='enable-notifications', 
+            value=False, 
+            label=['Disable', 'Enable'], 
+            style={'display': 'inline-block'}
+        )
     ], style={'textAlign': 'center', 'marginBottom': '20px'}),
     
     # 4. Last Update Time ----------------------------
@@ -475,59 +485,58 @@ app.layout = html.Div([
         # 7-1. Order Type toggle ----------------------------
         html.Div([
             html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
-            daq.ToggleSwitch( id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], style={'display': 'inline-block', 'marginRight': '20px'} ),
-            daq.ToggleSwitch( id='order_type', value=True, label=['Market Order：', 'Limit Order'], style={'display': 'inline-block', 'marginRight': '20px'} ),
-            daq.ToggleSwitch( id='Funding_strategy', value=False, label=['Manual', 'Average'], style={'display': 'inline-block', 'marginRight': '10px'} ),
+            daq.ToggleSwitch(id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], 
+                           style={'display': 'inline-block', 'marginRight': '20px'}),
+            daq.ToggleSwitch(id='order_type', value=True, label=['Market Order：', 'Limit Order'], 
+                           style={'display': 'inline-block', 'marginRight': '20px'}),
+            daq.ToggleSwitch(id='Funding_strategy', value=False, label=['Manual', 'Average'], 
+                           style={'display': 'inline-block', 'marginRight': '10px'}),
             html.Div(id='average-amount-input', style={'display': 'inline-block'})
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
+        
+        # 7-2. Category Dropdown ----------------------------
         html.Div([
             html.Label("Select Category："),
-            # 7-2. Category Dropdown ----------------------------
             dcc.Dropdown(
                 id='group-dropdown',
                 options=[{'label': cat, 'value': cat} for cat in g_stock_category],
                 placeholder="選擇族群",
                 style={'width': '50%', 'margin': '0 auto'}
-            ),
+            )
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
+        
+        # 股票輸入區和按鈕
         html.Div(id='stock-input-container', style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div([
-            html.Button("Refresh", id='refersh-button', n_clicks=0, style={'display': 'inline-block', 'marginRight': '20px'}),
-            html.Button("Send Order", id='confirm-order-button', n_clicks=0, style={'display': 'inline-block'})
-        ]
-        , style={'textAlign': 'center', 'marginBottom': '20px'}),
+            html.Button("Refresh", id='refersh-button', n_clicks=0, 
+                       style={'display': 'inline-block', 'marginRight': '20px'}),
+            html.Button("Send Order", id='confirm-order-button', n_clicks=0, 
+                       style={'display': 'inline-block'})
+        ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'}),
         
         # 確認對話框
-        html.Div(
-            id='order-confirmation-modal',
-            children=[
+        html.Div(id='order-confirmation-modal',
+            children=[html.Div([
                 html.Div([
+                    html.H3("確認下單資訊", style={'textAlign': 'center', 'marginBottom': '20px'}),
+                    html.Div(id='confirmation-details', 
+                            style={'marginBottom': '20px', 'padding': '15px', 
+                                  'backgroundColor': '#f9f9f9', 'border': '1px solid #ddd'}),
                     html.Div([
-                        html.H3("確認下單資訊", style={'textAlign': 'center', 'marginBottom': '20px'}),
-                        html.Div(id='confirmation-details', style={'marginBottom': '20px', 'padding': '15px', 'backgroundColor': '#f9f9f9', 'border': '1px solid #ddd'}),
-                        html.Div([
-                            html.Button("確認下單", id='confirm-final-order', n_clicks=0, style={'marginRight': '10px', 'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'}),
-                            html.Button("取消", id='cancel-order', n_clicks=0, style={'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'})
-                        ], style={'textAlign': 'center'})
-                    ], style={
-                        'backgroundColor': 'white',
-                        'margin': '50px auto',
-                        'padding': '30px',
-                        'width': '60%',
-                        'borderRadius': '10px',
-                        'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'
-                    })
-                ], style={
-                    'position': 'fixed',
-                    'top': '0',
-                    'left': '0',
-                    'width': '100%',
-                    'height': '100%',
-                    'backgroundColor': 'rgba(0, 0, 0, 0.5)',
-                    'zIndex': '1000'
-                })
-            ],
+                        html.Button("確認下單", id='confirm-final-order', n_clicks=0,
+                                  style={'marginRight': '10px', 'backgroundColor': '#28a745',
+                                        'color': 'white', 'border': 'none', 
+                                        'padding': '10px 20px', 'borderRadius': '5px'}),
+                        html.Button("取消", id='cancel-order', n_clicks=0,
+                                  style={'backgroundColor': '#dc3545', 'color': 'white',
+                                        'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px'})
+                    ], style={'textAlign': 'center'})
+                ], style={'backgroundColor': 'white', 'margin': '50px auto', 'padding': '30px',
+                         'width': '60%', 'borderRadius': '10px', 
+                         'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'})
+            ], style={'position': 'fixed', 'top': '0', 'left': '0', 'width': '100%',
+                     'height': '100%', 'backgroundColor': 'rgba(0, 0, 0, 0.5)', 'zIndex': '1000'})],
             style={'display': 'none'}
         )
     ])
@@ -697,6 +706,32 @@ def display_stock_link(clickData):
     selected_category = None
     if label in g_stock_category:
         selected_category = label
+        # 取得該族群所有的股票
+        stocks = g_category_json['台股'][label]
+        links = []
+        # 為每個股票生成連結
+        for stock_id in stocks:
+            # 從 initial_stocks_df 獲取股票類型
+            stock_type = initial_stocks_df.loc['stock_type', stock_id]
+            prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
+            
+            # 生成各個網站的連結
+            url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
+            url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
+            url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
+            
+            links.extend([
+                html.A(f"{stock_id}-GoodInfo", href=url_goodinfo, target="_blank", 
+                       style={'fontSize': '16px', 'color': 'blue', 'margin': '5px 10px'}),
+                html.A(f"{stock_id}-Wantgoo", href=url_wantgoo, target="_blank", 
+                       style={'fontSize': '16px', 'color': 'green', 'margin': '5px 10px'}),
+                html.A(f"{stock_id}-TradingView", href=url_tradingView, target="_blank", 
+                       style={'fontSize': '16px', 'color': 'black', 'margin': '5px 10px'}),
+                html.Br()
+            ])
+        
+        links_div = html.Div(links, style={'textAlign': 'center', 'marginTop': '10px', 'maxHeight': '200px', 'overflowY': 'auto'})
+        return links_div, selected_category
 
     # 如果點擊的是最外圍的 "Taiwan Stock"，顯示三個指定的連結
     if label == "Taiwan Stock":
@@ -888,8 +923,8 @@ def refresh_stock_data(n_clicks, buy_sell, funding_strategy, selected_group, tra
                               if trade_toggles[i] and price is not None and price > 0)
             
             if valid_stocks > 0:
-                # 假設每檔股票分配 10000 元
-                default_amount_per_stock = 10000
+                # 假設每檔股票分配 1000000 元
+                default_amount_per_stock = 1000000
                 
                 for i, price in enumerate(prices):
                     if trade_toggles[i] and price is not None and price > 0:
@@ -941,8 +976,7 @@ def refresh_with_average_amount(n_clicks, buy_sell, funding_strategy, average_am
         amount_per_stock = average_amount / valid_stocks
         
         for i, price in enumerate(current_prices):
-            if (i < len(trade_toggles) and trade_toggles[i] and 
-                price is not None and price > 0):
+            if (i < len(trade_toggles) and trade_toggles[i] and price is not None and price > 0):
                 # 計算張數（每張1000股）
                 quantity = int(amount_per_stock / (price * 1000))
                 quantities.append(quantity)
@@ -962,10 +996,11 @@ def refresh_with_average_amount(n_clicks, buy_sell, funding_strategy, average_am
     [Input({'type': 'price-input', 'index': ALL}, 'value'),
      Input({'type': 'quantity-input', 'index': ALL}, 'value'),
      Input('Funding_strategy', 'value'),
-     Input('average-amount', 'value')],
+     Input('average-amount', 'value'),
+     Input({'type': 'trade-toggle', 'index': ALL}, 'value')],  # 新增 trade-toggle 輸入
     prevent_initial_call=True
 )
-def update_cost_display(prices, quantities, funding_strategy, average_amount):
+def update_cost_display(prices, quantities, funding_strategy, average_amount, trade_toggles):
     """實時更新估算成本、百分比、零股和總計"""
     costs = []
     percentages = []
@@ -982,14 +1017,30 @@ def update_cost_display(prices, quantities, funding_strategy, average_amount):
         else:
             individual_costs.append(0)
     
-    # 計算有效股票數量（用於平均投資策略的零股計算）
-    valid_stock_count = 0
-    if funding_strategy and average_amount and average_amount > 0:
-        valid_stock_count = sum(1 for price, quantity in zip(prices, quantities) 
-                               if price is not None and quantity is not None and price > 0 and quantity > 0)
+    # 計算有效股票數量（只要 trade toggle 為 True 就算）
+    valid_stock_count = sum(1 for toggle in trade_toggles if toggle)
     
     # 然後計算每個股票的成本、百分比和零股
     for i, (price, quantity) in enumerate(zip(prices, quantities)):
+        if not trade_toggles[i]:  # 如果 toggle 為 False
+            costs.append("0")
+            percentages.append("0%")
+            odd_lots.append("0")
+            continue
+            
+        # 處理零股計算
+        if funding_strategy and average_amount and average_amount > 0 and valid_stock_count > 0:
+            if price is not None and price > 0:  # 確保價格有效
+                # 計算每檔股票可以購買的股數
+                amount_per_stock = average_amount / valid_stock_count
+                shares = int(amount_per_stock / price)  # 計算可以買多少股
+                odd_lots.append(f"{shares}")
+            else:
+                odd_lots.append("0")  # 價格無效時顯示0
+        else:
+            odd_lots.append("0")  # 非平均分配模式時顯示0
+        
+        # 處理成本和百分比計算
         if price is not None and quantity is not None and price > 0 and quantity > 0:
             cost = individual_costs[i]
             costs.append(f"${cost:,.0f}")
@@ -997,25 +1048,12 @@ def update_cost_display(prices, quantities, funding_strategy, average_amount):
             # 計算百分比
             if total_cost > 0:
                 percentage = (cost / total_cost) * 100
-                percentages.append(f"{percentage:.1f}%")
+                percentages.append(f"{percentage:.2f}%")
             else:
                 percentages.append("0%")
-            
-            # 計算零股：根據策略決定計算方式
-            if funding_strategy and average_amount and average_amount > 0 and valid_stock_count > 0:
-                # 平均投資策略：計算平均分配後每檔可購買的總股數
-                amount_per_stock = average_amount / valid_stock_count
-                total_shares = int(amount_per_stock / price)
-                odd_lots.append(f"{total_shares}")
-            else:
-                # 一般計算：用當前投資金額可以買多少股（不足一張的部分）
-                total_shares = int(cost / price)  # 總共可以買多少股
-                odd_lot_shares = total_shares % 1000  # 零股部分（不足一張的股數）
-                odd_lots.append(f"{odd_lot_shares}")
         else:
             costs.append("0")
             percentages.append("0%")
-            odd_lots.append("0")
     
     return costs, percentages, odd_lots, f"${total_cost:,.0f}"
 
