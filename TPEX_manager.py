@@ -71,7 +71,7 @@ headers = {
 
 
 class TPEX_manager:
-    def __init__(self, daily_data_dir='./raw_stock_data/daily/twex'):
+    def __init__(self, daily_data_dir='./raw_stock_data/daily/tpex'):
         if not os.path.exists(daily_data_dir):
             os.makedirs(daily_data_dir)
         self.daily_data_dir = daily_data_dir

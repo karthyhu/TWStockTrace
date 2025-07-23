@@ -162,11 +162,8 @@ def send_discord_category_notification(treemap_df, fig):
 
 def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_twse, company_json_data_tpex, target_code):
     
-    
-    """根據 Code 找到 ClosingPrice 和 Name"""
-    # 先搜尋證交所資料
-    for record in past_json_data_twse:
-        if record['Code'] == target_code:
+    if True:
+        if past_json_data_twse['data'].get(target_code) != None:
             issue_shares = 0
             for company_record in company_json_data_twse:
                 if target_code == '0050':
@@ -179,15 +176,13 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
                     issue_shares = company_record['已發行普通股數或TDR原股發行股數']
                     break  # 找到後立即跳出迴圈
             return {
-                'last_close_price': record['ClosingPrice'],
-                'stock_name': record['Name'], 
+                'last_close_price': float(past_json_data_twse['data'][target_code][2]), #上市股票收盤價
+                'stock_name': past_json_data_twse['data'][target_code][1], #上市股票顯示名稱
                 'stock_type': 'TWSE',
                 'issue_shares': float(issue_shares)
             }
-
-    # 如果在證交所找不到，再搜尋上櫃資料
-    for record in past_json_data_tpex:
-        if record['SecuritiesCompanyCode'] == target_code:
+        
+        elif past_json_data_tpex['data'].get(target_code) != None:
             issue_shares = 0
             for company_record in company_json_data_tpex:
                 if target_code == '006201':
@@ -197,14 +192,58 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
                     issue_shares = company_record['IssueShares']
                     break
             return {
-                'last_close_price': record['Close'],
-                'stock_name': record['CompanyName'], #上櫃股票顯示名稱
+                'last_close_price': float(past_json_data_tpex['data'][target_code][2]),  #上櫃股票收盤價
+                'stock_name': past_json_data_tpex['data'][target_code][1], #上櫃股票顯示名稱
                 'stock_type': 'TPEx',
                 'issue_shares': float(issue_shares)
-            }
+                }
         
-    print(f"找不到股票代號：{target_code}")
-    return None  # 如果找不到，回傳 None
+        print(f"找不到股票代號：{target_code}")
+        return None  # 如果找不到，回傳 None
+
+    else:
+        """根據 Code 找到 ClosingPrice 和 Name"""
+        # 先搜尋證交所資料
+        for record in past_json_data_twse:
+            if record['Code'] == target_code:
+                issue_shares = 0
+                for company_record in company_json_data_twse:
+                    if target_code == '0050':
+                        issue_shares = 13234500000
+                        break
+                    elif target_code == '0051':
+                        issue_shares = 26000000
+                        break
+                    if company_record['公司代號'] == target_code:
+                        issue_shares = company_record['已發行普通股數或TDR原股發行股數']
+                        break  # 找到後立即跳出迴圈
+                return {
+                    'last_close_price': record['ClosingPrice'],
+                    'stock_name': record['Name'], 
+                    'stock_type': 'TWSE',
+                    'issue_shares': float(issue_shares)
+                }
+
+        # 如果在證交所找不到，再搜尋上櫃資料
+        for record in past_json_data_tpex:
+            if record['SecuritiesCompanyCode'] == target_code:
+                issue_shares = 0
+                for company_record in company_json_data_tpex:
+                    if target_code == '006201':
+                        issue_shares = 18946000000 # 18946000 -> 18946000000 不然顯示不出來
+                        break
+                    if company_record['SecuritiesCompanyCode'] == target_code:
+                        issue_shares = company_record['IssueShares']
+                        break
+                return {
+                    'last_close_price': record['Close'],
+                    'stock_name': record['CompanyName'], #上櫃股票顯示名稱
+                    'stock_type': 'TPEx',
+                    'issue_shares': float(issue_shares)
+                }
+            
+        print(f"找不到股票代號：{target_code}")
+        return None  # 如果找不到，回傳 None
 
 def downlod_stock_company_data():
     
@@ -279,13 +318,15 @@ def downlod_stock_data():
 # 載入初始資料
 def load_initial_data():
     
-    downlod_stock_data()
+    # downlod_stock_data()
     # time.sleep(1)
     # downlod_stock_company_data()
     
     analysis_json_path = './my_stock_category.json'
-    past_day_json_path_twse = './STOCK_DAY_ALL.json'
-    past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
+    # past_day_json_path_twse = './STOCK_DAY_ALL.json'
+    # past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
+    past_day_json_path_twse = '../raw_stock_data/daily/twse/today.json'
+    past_day_json_path_tpex = '../raw_stock_data/daily/tpex/today.json'
     company_data_json_path_twse = './comp_data/t187ap03_L.json'
     company_data_json_path_tpex = './comp_data/mopsfin_t187ap03_O.json'
 
