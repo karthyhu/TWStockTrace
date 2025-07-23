@@ -558,7 +558,7 @@ def handle_login(n_clicks, auth_code, password):
     if not auth_code or not password:
         return html.Div("❌ 請輸入憑證密碼和證券登入密碼", style={'color': 'red'})
     
-    result , result_str , sdk = esun_login_with_auth(auth_code , password)
+    result , result_str , trade_sdk , market_sdk = esun_login_with_auth(auth_code , password)
 
     # 模擬登入驗證過程
     if result:
