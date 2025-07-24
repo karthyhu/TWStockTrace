@@ -5,6 +5,8 @@ import time
 import random
 import re
 import itertools
+import timenormalyize as tn
+
 
 
 data_list = {
@@ -125,8 +127,8 @@ class TPEX_manager:
         range_percent = (change / closeprice * 100) if closeprice != 0 else 0.0
         
         # 添加漲幅到項目末尾
-        item.append(str(range_percent))
-        
+        item.append(str(round(range_percent, 3)))
+
         return item
 
     def _fetch_and_parse_data(self, date, type_code='AL'):
@@ -140,6 +142,7 @@ class TPEX_manager:
             return None
 
     def download_get_once(self, date: str = '114/07/14'):
+        date = tn.normalize_date(date, "ROC", "/")
         """下載單一類型(AL)的股票數據"""
         table_data = self._fetch_and_parse_data(date)
         
@@ -270,21 +273,16 @@ class TPEX_manager:
 def daily_trace(date: str = None):
     # 取得今天日期
     if date is None:
-        from datetime import datetime
-        today = datetime.now().strftime('%Y/%m/%d')
-        # today轉換成民國年
-        today = str(int(today[:4]) - 1911) + today[4:]
-
-    else:
-        today = f'{date[:3]}/{date[3:5]}/{date[5:]}'
-
-
+        date = tn.get_current_date("ROC", "")
+    
+    date = tn.normalize_date(date, "ROC", "")
+        
     # 儲存今天的資料
     trace_manager = TPEX_manager()
-    data = trace_manager.download_get_once(today)
+    data = trace_manager.download_get_once(date)
     if data:
         trace_manager.save_file(data, 'today')
-        print(f"{today} 的資料已成功儲存。")
+        print(f"{date} 的資料已成功儲存。")
 
 
 if __name__ == "__main__":

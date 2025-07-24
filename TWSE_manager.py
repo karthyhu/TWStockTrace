@@ -4,92 +4,163 @@ import requests
 import time
 import re
 from datetime import datetime, timedelta
-# from trace_manager import TraceManager
+import timenormalyize as tn
+
 
 class TWSE_manager:
-    def __init__(self, daily_data_dir='./raw_stock_data/daily/twse'):
+    def __init__(self, daily_data_dir="./raw_stock_data/daily/twse"):
         if not os.path.exists(daily_data_dir):
             os.makedirs(daily_data_dir)
         self.daily_data_dir = daily_data_dir
-        self.fill_list = ['Code', 'Name', 'ClosingPrice', 'Change', 'OpeningPrice', 'HighestPrice', 'LowestPrice', 'TradeVolume', 'TradeValue', 'Range']
+        self.fill_list = [
+            "Code",
+            "Name",
+            "ClosingPrice",
+            "Change",
+            "OpeningPrice",
+            "HighestPrice",
+            "LowestPrice",
+            "TradeVolume",
+            "TradeValue",
+            "Range",
+        ]
+
     def safe_float(self, value):
         """安全轉換為浮點數"""
         try:
-            return float(value.replace(',', '') if isinstance(value, str) else value)
+            return float(value.replace(",", "") if isinstance(value, str) else value)
         except (ValueError, AttributeError):
             return 0.0
 
     def safe_int(self, value):
         """安全轉換為整數"""
         try:
-            return int(value.replace(',', '') if isinstance(value, str) else value)
+            return int(value.replace(",", "") if isinstance(value, str) else value)
         except (ValueError, AttributeError):
             return 0
 
-    def download_openapi(self, date=None):
+    def download_internalurl(self, date=None):
+
+        if date:
+            date = tn.normalize_date(date, "CE", "")
+        else:
+            date = tn.get_current_date("CE", "-")
+
+        url = f"https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={date}&type=ALLBUT0999&response=json"
+
         try:
-            # 如果沒有指定日期，使用今日
-            
-            # 使用證交所 API
-            url = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL'
-            response = requests.get(url, timeout=10)
-            if response.status_code != 200:
-                print(f"❌ API 請求失敗: {response.status_code}")
-                return None
+            r = requests.get(url)
 
-            datas = response.json()
-            if not datas:
-                print("❌ API 回傳空資料")
-                return None
-                
-            total_data = {
-                'date': datas[0]['Date'],
-                'fields': self.fill_list.copy(),
-                'data': {}
-            }
-            
-            for item in datas:
-                try:
-                    # 使用安全轉換和正確的漲跌幅計算                    
-                    closing_price = self.safe_float(item.get('ClosingPrice', '0'))
-                    change = self.safe_float(item.get('Change', '0'))
-                    
-                    range_percent = (change / closing_price * 100) if closing_price != 0 else 0.0
-
-                    # print(f"處理股票 {item.get('Code', 'N/A')} - 漲跌幅: {range_percent:.2f}%")
-                    
-                    total_data['data'][item.get('Code', '')] = [
-                        item.get('Code', ''),
-                        item.get('Name', ''),
-                        closing_price,
-                        change,
-                        self.safe_float(item.get('OpeningPrice', '0')),
-                        self.safe_float(item.get('HighestPrice', '0')),
-                        self.safe_float(item.get('LowestPrice', '0')),
-                        self.safe_int(item.get('TradeVolume', '0')),
-                        self.safe_int(item.get('TradeValue', '0')),
-                        round(range_percent, 2)
-                    ]
-                except Exception as item_error:
-                    print(f"⚠️ 處理股票 {item.get('Code', 'Unknown')} 時發生錯誤: {item_error}")
-                    continue
-            
-            # 使用指定的目錄儲存檔案
-            
-            self.save_file(total_data, filename=f"{total_data['date']}.json")
-
-            print(f'📊 共處理 {len(total_data["data"])} 檔股票資料')
-            
-            return total_data
-                        
         except Exception as e:
-            print(f"❌ 下載台股資料時發生錯誤: {e}")
+            print(f"❌ 下載失敗: {e}")
             return None
 
-    def save_file(self, data, filename='NoName'):
+        jdata = r.json()
+        realdate = str(jdata["params"]["date"])
+        realdate = f"{int(realdate[:4])-1911}{realdate[4:]}"  # 修正日期格式
+        jdata = jdata["tables"][8]
+        total_data = {"date": realdate, "fields": self.fill_list.copy(), "data": {}}
+
+        # 0"證券代號",
+        # 1"證券名稱",
+        # 2"成交股數",
+        # 3"成交筆數",
+        # 4"成交金額",
+        # 5"開盤價",
+        # 6"最高價",
+        # 7"最低價",
+        # 8"收盤價",
+        # 9"漲跌(+/-)","<p style= color:red>+</p>"
+        # 10"漲跌價差",
+        # 11"最後揭示買價",
+        # 12"最後揭示買量",
+        # 13"最後揭示賣價",
+        # 14"最後揭示賣量",
+        # 15"本益比"
+        for item in jdata["data"]:
+            ClosingPrice = self.safe_float(item[8].replace(",", ""))
+            Change = self.safe_float(item[10])
+            if "+" in item[9]:
+                Change = abs(Change)
+            else:
+                Change = -abs(Change)
+
+            range_percent = (Change / ClosingPrice * 100) if ClosingPrice != 0 else 0.0
+            total_data["data"][item[0]] = [
+                str(item[0]),  # Code
+                str(item[1]),  # Name
+                str(self.safe_float(item[8].replace(",", ""))),  # ClosingPrice
+                str(self.safe_float(item[10].replace(",", ""))),  # Change
+                str(self.safe_float(item[5].replace(",", ""))),  # OpeningPrice
+                str(self.safe_float(item[6].replace(",", ""))),  # HighestPrice
+                str(self.safe_float(item[7].replace(",", ""))),  # LowestPrice
+                str(self.safe_int(item[2].replace(",", ""))),  # TradeVolume
+                str(self.safe_int(item[4].replace(",", ""))),  # TradeValue
+                str(round(range_percent, 5)),  # Range
+            ]
+        self.save_file(total_data, filename=f"{realdate}.json")
+        
+        if  tn.normalize_date(total_data['date']) != tn.normalize_date(date):
+            print(f"⚠️ 日期不一致: API 返回 {tn.normalize_date(total_data['date'])}, 請檢查日期格式")
+            return None
+
+        return total_data
+
+    def download_openapi(self, date=None):
+
+        # 使用證交所 API
+        try:
+            url = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+            response = requests.get(url, timeout=10)
+        except Exception as item_error:
+            print(f"⚠️ 處理股票 {item.get('Code', 'Unknown')} 時發生錯誤: {item_error}")
+            return None
+
+        datas = response.json()
+        if not datas:
+            print("❌ API 回傳空資料")
+            return None
+
+        total_data = {
+            "date": datas[0]["Date"],
+            "fields": self.fill_list.copy(),
+            "data": {},
+        }
+
+        for item in datas:
+            # 使用安全轉換和正確的漲跌幅計算
+            closing_price = self.safe_float(item.get("ClosingPrice", "0"))
+            change = self.safe_float(item.get("Change", "0"))
+
+            range_percent = (
+                (change / closing_price * 100) if closing_price != 0 else 0.0
+            )
+
+            # print(f"處理股票 {item.get('Code', 'N/A')} - 漲跌幅: {range_percent:.2f}%")
+
+            total_data["data"][item.get("Code", "")] = [
+                str(item.get("Code", "")),
+                str(item.get("Name", "")),
+                str(closing_price),
+                str(change),
+                str(self.safe_float(item.get("OpeningPrice", ""))),
+                str(self.safe_float(item.get("HighestPrice", ""))),
+                str(self.safe_float(item.get("LowestPrice", ""))),
+                str(self.safe_int(item.get("TradeVolume", ""))),
+                str(self.safe_int(item.get("TradeValue", ""))),
+                str(round(range_percent, 5))
+            ]
+
+        self.save_file(total_data, filename=f"{total_data['date']}.json")
+
+        print(f'📊 共處理 {len(total_data["data"])} 檔股票資料')
+
+        return total_data
+
+    def save_file(self, data, filename="NoName"):
         """儲存資料到 JSON 檔案"""
         try:
-            with open(f'{self.daily_data_dir}/{filename}', 'w', encoding='utf-8') as f:
+            with open(f"{self.daily_data_dir}/{filename}", "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=1)
             print(f"📁 檔案已儲存: {filename}")
         except Exception as e:
@@ -99,16 +170,18 @@ class TWSE_manager:
 def update_trace_json(date):
     """更新 trace.json 的便利函數（僅 TWSE）"""
     from trace_manager import update_trace_json
+
     return update_trace_json(twse_date=date)
 
 
-def daily_trace(date:str = None):
+def daily_trace(date: str = None):
     manager = TWSE_manager()
-    data = manager.download_openapi()
+    if date is None:
+        date = tn.get_current_date("ROC", "-")
+    data = manager.download_internalurl(date)
     if data:
         manager.save_file(data, f"today.json")
-        
-    return data['date'] if 'date' in data else None
+    return date
 
 
 if __name__ == "__main__":
@@ -116,3 +189,4 @@ if __name__ == "__main__":
     print("測試台股資料下載...")
     manager = TWSE_manager()
     date = manager.download_openapi()
+    # date = manager.download_internalurl("1140724")
