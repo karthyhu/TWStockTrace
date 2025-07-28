@@ -880,7 +880,15 @@ def populate_stock_inputs(selected_group):
                         style={'width': '10%', 'display': 'inline-block'}
                     ),
                     # 零股顯示
-                    html.Div(id={'type': 'odd-lots-display', 'index': stock_id}, children='0', style={'width': '10%', 'display': 'inline-block'}),
+                    html.Div(
+                        dcc.Input(
+                            id={'type': 'odd-lots-input', 'index': stock_id},
+                            type='number',
+                            placeholder='輸入股數',
+                            style={'width': '80%'}
+                        ),
+                        style={'width': '10%', 'display': 'inline-block'}
+                    ),
                     html.Div(id={'type': 'cost-display', 'index': stock_id}, children='0', style={'width': '12%', 'display': 'inline-block'}),
                     html.Div(id={'type': 'percentage-display', 'index': stock_id}, children='0%', style={'width': '12%', 'display': 'inline-block'}),
                     html.Div(id={'type': 'status-display', 'index': stock_id}, children='Not ordered', style={'width': '16%', 'display': 'inline-block'}),
@@ -902,40 +910,43 @@ def populate_stock_inputs(selected_group):
             ], style={'marginTop': '10px', 'padding': '10px', 'backgroundColor': '#f8f8f8', 'borderTop': '2px solid #ddd'})
         ], style={'maxHeight': '400px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'})
 
-# 合併後的 Refresh 按鈕回調邏輯
+# 整合 refresh 按鈕回調邏輯，依據 Funding_strategy 與 average_amount 狀態分配價格、張數、零股
 @app.callback(
     [Output({'type': 'price-input', 'index': ALL}, 'value'),
-     Output({'type': 'quantity-input', 'index': ALL}, 'value')],
+     Output({'type': 'quantity-input', 'index': ALL}, 'value'),
+     Output({'type': 'odd-lots-input', 'index': ALL}, 'value')],
     Input('refersh-button', 'n_clicks'),
     [State('buy-sell-toggle', 'value'),
      State('Funding_strategy', 'value'),
+     State('average-amount', 'value'),
      State('group-dropdown', 'value'),
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'trade-toggle', 'index': ALL}, 'id'),
      State({'type': 'price-input', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
-def refresh_stock_data(n_clicks, buy_sell, funding_strategy, selected_group, trade_toggles, trade_ids, price_ids):
-    """合併的 Refresh 按鈕處理邏輯"""
+def refresh_stock_data_all(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, trade_ids, price_ids):
+    """
+    重新設計 refresh 的邏輯，整合 refresh_with_average_amount 與 refresh_stock_data
+    1. 如果 average-amount 沒有生成 或 Funding_strategy 為 Manual 則只更新價格
+    2. 如果 average-amount 有生成但數值為 0，也只更新價格並把 quantity-input 及零股都設為0
+    3. 如果 average-amount 有數值則平均分配到有開啟 trade-toggle 的股票
+    4. 分配規則：先除以有效股數，得到每個個股可購買金額，換算成可購買零股數，再除以1000將1000零股轉換成1張，剩下餘數為零股
+    """
     if n_clicks == 0 or not selected_group:
         raise PreventUpdate
-    
-    # 獲取股票代號列表
+
     stock_ids = [trade_id['index'] for trade_id in trade_ids]
-    
-    # 初始化價格和張數列表
     prices = []
     quantities = []
-    
+    odd_lots = []
+
+    # 取得即時價格
     for i, stock_id in enumerate(stock_ids):
-        # 只處理 Trade Toggle 為 True 的股票
         if trade_toggles[i]:
-            # 從即時資料中獲取買賣價
             if stock_id in g_track_stock_realtime_data and 'realtime' in g_track_stock_realtime_data[stock_id]:
                 if g_track_stock_realtime_data[stock_id]['success']:
                     realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
-                    
-                    # 根據買賣方向設定價格
                     if buy_sell:  # Buy mode - 使用賣價一檔 (ask_price)
                         if 'best_ask_price' in realtime_data and len(realtime_data['best_ask_price']) > 0:
                             price = float(realtime_data['best_ask_price'][0]) if realtime_data['best_ask_price'][0] != '-' else 0
@@ -946,157 +957,92 @@ def refresh_stock_data(n_clicks, buy_sell, funding_strategy, selected_group, tra
                             price = float(realtime_data['best_bid_price'][0]) if realtime_data['best_bid_price'][0] != '-' else 0
                         else:
                             price = 0
-                    
                     prices.append(price)
                 else:
                     prices.append(0)
             else:
                 prices.append(0)
         else:
-            prices.append(None)  # Trade Toggle 為 False 的股票不填入價格
-    
-    # 處理張數邏輯
-    if funding_strategy:  # Average 模式
-        # 沒有投資金額，使用預設金額
-        try:
-            # 計算有效股票數量（Trade Toggle 為 True 且價格大於 0）
-            valid_stocks = sum(1 for i, price in enumerate(prices) 
-                              if trade_toggles[i] and price is not None and price > 0)
-            
-            if valid_stocks > 0:
-                # 假設每檔股票分配 1000000 元
-                default_amount_per_stock = 1000000
-                
-                for i, price in enumerate(prices):
-                    if trade_toggles[i] and price is not None and price > 0:
-                        # 計算張數（每張1000股）
-                        quantity = int(default_amount_per_stock / (price * 1000))
-                        quantities.append(quantity)
-                    else:
-                        quantities.append(None)
-            else:
-                quantities = [None] * len(stock_ids)
-        except:
-            quantities = [None] * len(stock_ids)
-    else:  # Manual 模式
-        # Manual 模式只刷新價格，不修改張數
-        quantities = [None] * len(stock_ids)
-    
-    return prices, quantities
+            prices.append(None)
 
-# 處理有投資金額的 Average 模式 Refresh
-@app.callback(
-    Output({'type': 'quantity-input', 'index': ALL}, 'value', allow_duplicate=True),
-    Input('refersh-button', 'n_clicks'),
-    [State('buy-sell-toggle', 'value'),
-     State('Funding_strategy', 'value'),
-     State('average-amount', 'value'),
-     State('group-dropdown', 'value'),
-     State({'type': 'trade-toggle', 'index': ALL}, 'value'),
-     State({'type': 'trade-toggle', 'index': ALL}, 'id'),
-     State({'type': 'price-input', 'index': ALL}, 'value')],
-    prevent_initial_call=True
-)
-def refresh_with_average_amount(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, trade_ids, current_prices):
-    """處理有投資金額時的 Average 模式 Refresh 邏輯"""
-    if (n_clicks == 0 or not selected_group or not funding_strategy or 
-        average_amount is None or average_amount <= 0):
-        raise PreventUpdate
-    
-    # 獲取股票代號列表
-    stock_ids = [trade_id['index'] for trade_id in trade_ids]
-    quantities = []
-    
-    # 計算有效股票數量（Trade Toggle 為 True 且價格大於 0）
-    valid_stocks = sum(1 for i, price in enumerate(current_prices) 
-                      if (i < len(trade_toggles) and trade_toggles[i] and 
-                          price is not None and price > 0))
-    
-    if valid_stocks > 0:
-        # 平均分配投資金額
-        amount_per_stock = average_amount / valid_stocks
-        
-        for i, price in enumerate(current_prices):
-            if (i < len(trade_toggles) and trade_toggles[i] and price is not None and price > 0):
-                # 計算張數（每張1000股）
-                quantity = int(amount_per_stock / (price * 1000))
-                quantities.append(quantity)
-            else:
-                quantities.append(None)
-    else:
-        quantities = [None] * len(stock_ids)
-    
-    return quantities
+    # Manual 模式或 average-amount 未生成或為 0
+    if not funding_strategy or average_amount is None:
+        quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        return prices, quantities, odd_lots
+
+    if average_amount == 0:
+        quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        return prices, quantities, odd_lots
+
+    # 平均分配投資金額
+    valid_indices = [i for i, price in enumerate(prices) if trade_toggles[i] and price is not None and price > 0]
+    valid_count = len(valid_indices)
+    if valid_count == 0:
+        quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
+        return prices, quantities, odd_lots
+
+    amount_per_stock = average_amount / valid_count
+    for i, price in enumerate(prices):
+        if i in valid_indices:
+            total_shares = int(amount_per_stock / price)
+            full_lots = total_shares // 1000
+            odd_share = total_shares % 1000
+            quantities.append(full_lots)
+            odd_lots.append(odd_share)
+        else:
+            quantities.append(0 if trade_toggles[i] else None)
+            odd_lots.append(0 if trade_toggles[i] else None)
+
+    return prices, quantities, odd_lots
 
 # 添加實時更新成本顯示的回調
 @app.callback(
     [Output({'type': 'cost-display', 'index': ALL}, 'children'),
      Output({'type': 'percentage-display', 'index': ALL}, 'children'),
-     Output({'type': 'odd-lots-display', 'index': ALL}, 'children'),
      Output('total-cost-display', 'children')],
     [Input({'type': 'price-input', 'index': ALL}, 'value'),
      Input({'type': 'quantity-input', 'index': ALL}, 'value'),
+     Input({'type': 'odd-lots-input', 'index': ALL}, 'value'),
      Input('Funding_strategy', 'value'),
      Input('average-amount', 'value'),
-     Input({'type': 'trade-toggle', 'index': ALL}, 'value')],  # 新增 trade-toggle 輸入
+     Input({'type': 'trade-toggle', 'index': ALL}, 'value')],
     prevent_initial_call=True
 )
-def update_cost_display(prices, quantities, funding_strategy, average_amount, trade_toggles):
-    """實時更新估算成本、百分比、零股和總計"""
+def update_cost_display(prices, quantities, odd_lots, funding_strategy, average_amount, trade_toggles):
+    """實時更新估算成本、百分比和總計，odd-lots-input 為 input"""
     costs = []
     percentages = []
-    odd_lots = []
     total_cost = 0
-    
-    # 首先計算總成本
     individual_costs = []
-    for price, quantity in zip(prices, quantities):
-        if price is not None and quantity is not None and price > 0 and quantity > 0:
-            cost = price * quantity * 1000  # 每張1000股
+
+    # 計算個別成本與總成本（張數與零股都要算）
+    for price, quantity, odd in zip(prices, quantities, odd_lots):
+        if price is not None and price > 0:
+            q = quantity if quantity is not None and quantity > 0 else 0
+            o = odd if odd is not None and odd > 0 else 0
+            cost = price * (q * 1000 + o)
             individual_costs.append(cost)
             total_cost += cost
         else:
             individual_costs.append(0)
-    
-    # 計算有效股票數量（只要 trade toggle 為 True 就算）
-    valid_stock_count = sum(1 for toggle in trade_toggles if toggle)
-    
-    # 然後計算每個股票的成本、百分比和零股
-    for i, (price, quantity) in enumerate(zip(prices, quantities)):
-        if not trade_toggles[i]:  # 如果 toggle 為 False
+
+    # 計算百分比
+    for i, cost in enumerate(individual_costs):
+        if not trade_toggles[i]:
             costs.append("0")
             percentages.append("0%")
-            odd_lots.append("0")
             continue
-            
-        # 處理零股計算
-        if funding_strategy and average_amount and average_amount > 0 and valid_stock_count > 0:
-            if price is not None and price > 0:  # 確保價格有效
-                # 計算每檔股票可以購買的股數
-                amount_per_stock = average_amount / valid_stock_count
-                shares = int(amount_per_stock / price)  # 計算可以買多少股
-                odd_lots.append(f"{shares}")
-            else:
-                odd_lots.append("0")  # 價格無效時顯示0
+        costs.append(f"${cost:,.0f}")
+        if total_cost > 0:
+            percentage = (cost / total_cost) * 100
+            percentages.append(f"{percentage:.2f}%")
         else:
-            odd_lots.append("0")  # 非平均分配模式時顯示0
-        
-        # 處理成本和百分比計算
-        if price is not None and quantity is not None and price > 0 and quantity > 0:
-            cost = individual_costs[i]
-            costs.append(f"${cost:,.0f}")
-            
-            # 計算百分比
-            if total_cost > 0:
-                percentage = (cost / total_cost) * 100
-                percentages.append(f"{percentage:.2f}%")
-            else:
-                percentages.append("0%")
-        else:
-            costs.append("0")
             percentages.append("0%")
-    
-    return costs, percentages, odd_lots, f"${total_cost:,.0f}"
+
+    return costs, percentages, f"${total_cost:,.0f}"
 
 # 顯示確認對話框
 @app.callback(
@@ -1110,12 +1056,13 @@ def update_cost_display(prices, quantities, funding_strategy, average_amount, tr
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'value'),
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
+     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),  # 新增零股 State
      State({'type': 'price-input', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
-def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, ids):
-    """顯示確認對話框"""
-    if n_clicks == 0 or not selected_group or not prices or not quantities:
+def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids):
+    """顯示確認對話框（含零股）"""
+    if n_clicks == 0 or not selected_group or not prices or not quantities or not odd_lots:
         return {'display': 'none'}, ''
     
     action = "買進" if buy_sell else "賣出"
@@ -1138,19 +1085,22 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
     
     # 添加股票訂單詳情
     stock_orders = []
-    for i, (price, quantity, stock_id) in enumerate(zip(prices, quantities, ids)):
-        if (i < len(trade_toggles) and trade_toggles[i] and 
-            price is not None and quantity is not None and 
-            price > 0 and quantity > 0):
-            cost = price * quantity * 1000
+    for i, (price, quantity, odd, stock_id) in enumerate(zip(prices, quantities, odd_lots, ids)):
+        if (i < len(trade_toggles) and trade_toggles[i] and
+            price is not None and quantity is not None and odd is not None and
+            price > 0 and (quantity > 0 or odd > 0)):
+            cost = price * (quantity * 1000 + odd)
             total_cost += cost
+            order_text = [
+                html.Span(f"🏦 {stock_id['index']}", style={'fontWeight': 'bold', 'marginRight': '10px'}),
+                html.Span(f"價格：${price:,.2f}", style={'marginRight': '10px'}),
+                html.Span(f"張數：{quantity}", style={'marginRight': '10px'}),
+            ]
+            if odd > 0:
+                order_text.append(html.Span(f"零股：{odd}股", style={'marginRight': '10px'}))
+            order_text.append(html.Span(f"成本：${cost:,.0f}", style={'color': 'red', 'fontWeight': 'bold'}))
             stock_orders.append(
-                html.Div([
-                    html.Span(f"🏦 {stock_id['index']}", style={'fontWeight': 'bold', 'marginRight': '10px'}),
-                    html.Span(f"價格：${price:,.2f}", style={'marginRight': '10px'}),
-                    html.Span(f"張數：{quantity}", style={'marginRight': '10px'}),
-                    html.Span(f"成本：${cost:,.0f}", style={'color': 'red', 'fontWeight': 'bold'})
-                ], style={'margin': '5px 0', 'padding': '5px', 'backgroundColor': '#f8f9fa', 'borderRadius': '3px'})
+                html.Div(order_text, style={'margin': '5px 0', 'padding': '5px', 'backgroundColor': '#f8f9fa', 'borderRadius': '3px'})
             )
     
     if not stock_orders:
@@ -1178,49 +1128,53 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'value'),
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
+     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),  # 新增零股 State
      State({'type': 'price-input', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
-def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, ids):
-    """處理確認或取消訂單"""
+def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids):
+    """處理確認或取消訂單（含零股）"""
     from dash import callback_context
-    
+
     if not callback_context.triggered:
         return {'display': 'none'}, ''
-    
+
     button_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    
+
     if button_id == 'cancel-order':
         return {'display': 'none'}, '訂單已取消'
-    
+
     elif button_id == 'confirm-final-order':
         # 執行實際下單邏輯
-        if not selected_group or not prices or not quantities:
+        if not selected_group or not prices or not quantities or not odd_lots:
             return {'display': 'none'}, "請填寫完整的下單資訊！"
-        
+
         action = "買進" if buy_sell else "賣出"
         orders = []
-        
+
         # 檢查是否使用平均投資策略
         if funding_strategy:
             if average_amount:
                 orders.append(f"使用平均投資策略，總投資金額：${average_amount:,.0f}")
             else:
                 orders.append(f"使用平均投資策略")
-        
+
         # 只處理 Trade Toggle 為 True 的股票
-        for i, (price, quantity, stock_id) in enumerate(zip(prices, quantities, ids)):
-            if (i < len(trade_toggles) and trade_toggles[i] and 
-                price is not None and quantity is not None and 
-                price > 0 and quantity > 0):
-                orders.append(f"{action} {stock_id['index']}，價格：${price:,.2f}，張數：{quantity}")
-        
+        for i, (price, quantity, odd, stock_id) in enumerate(zip(prices, quantities, odd_lots, ids)):
+            if (i < len(trade_toggles) and trade_toggles[i] and
+                price is not None and quantity is not None and odd is not None and
+                price > 0 and (quantity > 0 or odd > 0)):
+                order_str = f"{action} {stock_id['index']}，價格：${price:,.2f}，張數：{quantity}"
+                if odd > 0:
+                    order_str += f"，零股：{odd}股"
+                orders.append(order_str)
+
         if not orders:
             return {'display': 'none'}, "請填寫完整的下單資訊！"
-        
+
         # 模擬下單成功
         return {'display': 'none'}, f"✅ 下單成功！\n" + "\n".join(orders)
-    
+
     return {'display': 'none'}, ''
 
 
