@@ -1,0 +1,16 @@
+{
+ "date": "1140728",
+ "fields": [
+  "Code",
+  "Name",
+  "ClosingPrice",
+  "Change",
+  "OpeningPrice",
+  "HighestPrice",
+  "LowestPrice",
+  "TradeVolume",
+  "TradeValue",
+  "Range"
+ ],
+ "data": {}
+}
