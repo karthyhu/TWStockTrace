@@ -400,14 +400,24 @@ def update_realtime_data(stocks_df):
                 
                 realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
                 
-                #如果沒有最新成交價 就用買價(bid)一檔代替
-                if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
-                    current_price = float(realtime_data['best_bid_price'][0]) # 最佳買價一檔
-                    if current_price == 0:
-                        current_price = float(realtime_data['best_bid_price'][1])
-                else:
-                    current_price = float(realtime_data['latest_trade_price'])
-                
+                best_bid = realtime_data.get('best_bid_price')
+                # 防呆：檢查 best_bid 是否有效（為 list 且有至少一個元素）
+                if not isinstance(best_bid, (list, tuple)) or not best_bid:
+                    print(f"⚠️ stock_id={stock_id} 因暫停交易,缺少有效的交易資料：{best_bid}")
+                    continue  # 跳過這支股票
+
+                try:
+                    #如果沒有最新成交價 就用買價(bid)一檔代替
+                    if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
+                        current_price = float(realtime_data['best_bid_price'][0]) # 最佳買價一檔
+                        if current_price == 0:
+                            current_price = float(realtime_data['best_bid_price'][1])
+                    else:
+                        current_price = float(realtime_data['latest_trade_price'])
+                except (ValueError, IndexError, TypeError) as e:
+                    print(f"⚠️ stock_id={stock_id} 資料轉換錯誤: {e}")
+                    continue
+
                 last_day_price = stocks_df.loc['last_day_price' , stock_id]
                 current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 2)
                 
