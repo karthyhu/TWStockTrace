@@ -314,7 +314,48 @@ def downlod_stock_data():
             print(f"TPEX 無法下載資料，HTTP 狀態碼: {res.status_code}")
     else:
         print(f"檔案 '{tpex_file_path}' 已存在，跳過下載。")
-        
+
+
+def remove_suspended_stocks(g_category_json):
+    """
+    讀取所有股票即時資料，若無 best_bid_price 與 best_ask_price 則判定暫停交易並移除
+    """
+    # 收集所有 stock_id
+    all_stock_ids = []
+    for category, stocks_info in g_category_json['台股'].items():
+        for stock_id in stocks_info.keys():
+            all_stock_ids.append(stock_id)
+
+    # 分成兩批取得即時資料
+    realtime_data = {}
+    mid = len(all_stock_ids) // 2
+    batch_ids_1 = all_stock_ids[:mid]
+    batch_ids_2 = all_stock_ids[mid:]
+    try:
+        batch_data_1 = twstock.realtime.get(batch_ids_1)
+        batch_data_2 = twstock.realtime.get(batch_ids_2)
+        realtime_data.update(batch_data_1)
+        realtime_data.update(batch_data_2)
+    except Exception as e:
+        print(f"取得即時資料失敗: {e}")
+
+    # 檢查並移除暫停交易的股票
+    removed_stocks = []
+    for category in list(g_category_json['台股'].keys()):
+        for stock_id in list(g_category_json['台股'][category].keys()):
+            data = realtime_data.get(stock_id, {})
+            rt = data.get('realtime', {})
+            best_bid = rt.get('best_bid_price')
+            best_ask = rt.get('best_ask_price')
+
+            if (not best_bid or best_bid == ['-']) and (not best_ask or best_ask == ['-']):
+                stock_name = g_category_json['台股'][category][stock_id].get('股票', '')
+                removed_stocks.append(f"{category}  {stock_id}({stock_name})")
+                del g_category_json['台股'][category][stock_id]
+    if removed_stocks:
+        print(f"⚠️ 以下股票今日暫停交易，已移除: {removed_stocks}")
+
+    
 # 載入初始資料
 def load_initial_data():
     
@@ -344,6 +385,8 @@ def load_initial_data():
 
     global g_stock_category
     g_stock_category = list(g_category_json['台股'].keys())  # 提取所有類別名稱
+
+    remove_suspended_stocks(g_category_json)
 
     stocks_info_list = {}
     for category, stocks_info in g_category_json['台股'].items():
@@ -400,12 +443,6 @@ def update_realtime_data(stocks_df):
                 
                 realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
                 
-                best_bid = realtime_data.get('best_bid_price')
-                # 防呆：檢查 best_bid 是否有效（為 list 且有至少一個元素）
-                if not isinstance(best_bid, (list, tuple)) or not best_bid:
-                    print(f"⚠️ stock_id={stock_id} 因暫停交易,缺少有效的交易資料：{best_bid}")
-                    continue  # 跳過這支股票
-
                 try:
                     #如果沒有最新成交價 就用買價(bid)一檔代替
                     if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
