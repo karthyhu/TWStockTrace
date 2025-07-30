@@ -14,7 +14,7 @@ import plotly.io as pio
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
-from test_esun_api import esun_login_with_auth
+from test_esun_api import esun_login_with_auth, esun_get_stock_price
 
 # Global variables
 g_notified_status = {}
@@ -22,6 +22,7 @@ g_last_notification_time = {}
 g_stock_category = []
 g_category_json = {}
 g_track_stock_realtime_data = {}
+g_login_success = False # 登入狀態 flag
 
 def send_line_message_v3(message, channel_access_token, user_id):
     """使用 Line Messaging API v3 發送訊息"""
@@ -577,7 +578,7 @@ app.layout = html.Div([
                            style={'display': 'inline-block', 'marginRight': '20px'}),
             daq.ToggleSwitch(id='order_type', value=True, label=['Market Order：', 'Limit Order'], 
                            style={'display': 'inline-block', 'marginRight': '20px'}),
-            daq.ToggleSwitch(id='Funding_strategy', value=False, label=['Manual', 'Average'], 
+            daq.ToggleSwitch(id='Funding_strategy', value=True, label=['Manual', 'Average'], 
                            style={'display': 'inline-block', 'marginRight': '10px'}),
             html.Div(id='average-amount-input', style={'display': 'inline-block'})
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
@@ -648,10 +649,13 @@ def handle_login(n_clicks, auth_code, password):
     
     result , result_str , trade_sdk , market_sdk = esun_login_with_auth(auth_code , password)
 
+    global g_login_success
     # 模擬登入驗證過程
     if result:
+        g_login_success = True
         return html.Div("✅ 登入成功！", style={'color': 'green'})
     else:
+        g_login_success = False
         return html.Div("❌ 登入失敗：" + f"{result_str}" , style={'color': 'red'})
 
 
@@ -884,15 +888,16 @@ def populate_stock_inputs(selected_group):
         return html.Div([
             # 標題列
             html.Div([
-                html.Div("Trade Toggle", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Stock ID", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Stock Name", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Price", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Volume(張)", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Odd Lots(股)", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Est. Cost", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Percentage", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-                html.Div("Order Status", style={'width': '16%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Trade Toggle", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock ID", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Stock Name", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Price", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Volume(張)", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Odd Price", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Odd Lots(股)", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Est. Cost", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Percentage", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div("Order Status", style={'width': '20%', 'display': 'inline-block', 'fontWeight': 'bold'}),
             ], style={'marginBottom': '10px', 'backgroundColor': '#f0f0f0', 'padding': '10px'}),
             
             # 股票資訊列
@@ -902,10 +907,10 @@ def populate_stock_inputs(selected_group):
                         id={'type': 'trade-toggle', 'index': stock_id}, 
                         value=True, 
                         label=['Off', 'On'], 
-                        style={'width': '10%', 'display': 'inline-block'} 
+                        style={'width': '8.5%', 'display': 'inline-block'} 
                     ),       
-                    html.Div(stock_id, style={'width': '10%', 'display': 'inline-block'}), # 股票代號
-                    html.Div(stock_info['股票'], style={'width': '10%', 'display': 'inline-block'}), # 股票名稱
+                    html.Div(stock_id, style={'width': '8.5%', 'display': 'inline-block'}), # 股票代號
+                    html.Div(stock_info['股票'], style={'width': '8.5%', 'display': 'inline-block'}), # 股票名稱
                     # 價格輸入
                     html.Div(
                         dcc.Input(
@@ -914,7 +919,7 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入價格',
                             style={'width': '80%'}
                         ),
-                        style={'width': '10%', 'display': 'inline-block'}
+                        style={'width': '8.5%', 'display': 'inline-block'}
                     ),
                     # 張數輸入
                     html.Div(
@@ -924,7 +929,16 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入張數',
                             style={'width': '80%'}
                         ),
-                        style={'width': '10%', 'display': 'inline-block'}
+                        style={'width': '8.5%', 'display': 'inline-block'}
+                    ),
+                    html.Div(
+                        dcc.Input(
+                            id={'type': 'odd_price-input', 'index': stock_id},
+                            type='number',
+                            placeholder='輸入價格',
+                            style={'width': '80%'}
+                        ),
+                        style={'width': '8.5%', 'display': 'inline-block'}
                     ),
                     # 零股顯示
                     html.Div(
@@ -934,26 +948,27 @@ def populate_stock_inputs(selected_group):
                             placeholder='輸入股數',
                             style={'width': '80%'}
                         ),
-                        style={'width': '10%', 'display': 'inline-block'}
+                        style={'width': '8.5%', 'display': 'inline-block'}
                     ),
-                    html.Div(id={'type': 'cost-display', 'index': stock_id}, children='0', style={'width': '12%', 'display': 'inline-block'}),
-                    html.Div(id={'type': 'percentage-display', 'index': stock_id}, children='0%', style={'width': '12%', 'display': 'inline-block'}),
-                    html.Div(id={'type': 'status-display', 'index': stock_id}, children='Not ordered', style={'width': '16%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'cost-display', 'index': stock_id}, children='0', style={'width': '8.5%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'percentage-display', 'index': stock_id}, children='0%', style={'width': '8.5%', 'display': 'inline-block'}),
+                    html.Div(id={'type': 'status-display', 'index': stock_id}, children='Not ordered', style={'width': '20%', 'display': 'inline-block'}),
 
                 ], style={'marginBottom': '5px', 'padding': '5px', 'borderBottom': '1px solid #ddd'})
                 for stock_id, stock_info in stocks.items()
             ],
             # 總計行
             html.Div([
-                html.Div("", style={'width': '10%', 'display': 'inline-block'}),
-                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
-                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
-                html.Div("", style={'width': '10%', 'display': 'inline-block'}), 
-                html.Div("總計：", style={'width': '10%', 'display': 'inline-block', 'fontWeight': 'bold', 'textAlign': 'right'}),
-                html.Div("", style={'width': '10%', 'display': 'inline-block'}),
-                html.Div(id='total-cost-display', children='$0', style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
-                html.Div("100%", style={'width': '12%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
-                html.Div("", style={'width': '16%', 'display': 'inline-block'}),
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}),
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}), 
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}), 
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}), 
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}), 
+                html.Div("總計：", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold', 'textAlign': 'right'}),
+                html.Div("", style={'width': '8.5%', 'display': 'inline-block'}),
+                html.Div(id='total-cost-display', children='$0', style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
+                html.Div("100%", style={'width': '8.5%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'red'}),
+                html.Div("", style={'width': '20%', 'display': 'inline-block'}),
             ], style={'marginTop': '10px', 'padding': '10px', 'backgroundColor': '#f8f8f8', 'borderTop': '2px solid #ddd'})
         ], style={'maxHeight': '400px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'})
 
@@ -961,7 +976,8 @@ def populate_stock_inputs(selected_group):
 @app.callback(
     [Output({'type': 'price-input', 'index': ALL}, 'value'),
      Output({'type': 'quantity-input', 'index': ALL}, 'value'),
-     Output({'type': 'odd-lots-input', 'index': ALL}, 'value')],
+     Output({'type': 'odd-lots-input', 'index': ALL}, 'value'),
+     Output({'type': 'odd_price-input', 'index': ALL}, 'value')],  # 新增 odd_price 輸出
     Input('refersh-button', 'n_clicks'),
     [State('buy-sell-toggle', 'value'),
      State('Funding_strategy', 'value'),
@@ -987,41 +1003,83 @@ def refresh_stock_data_all(n_clicks, buy_sell, funding_strategy, average_amount,
     prices = []
     quantities = []
     odd_lots = []
+    oddlot_prices = []
+    global g_login_success
+    
+    if g_login_success:
+        for i, stock_id in enumerate(stock_ids):
+            if trade_toggles[i]:
+                # 取得整股價格
+                lot_price_data = esun_get_stock_price("LOT", stock_id)
+                if buy_sell:  
+                    if lot_price_data and 'asks' in lot_price_data and len(lot_price_data['asks']) > 0:
+                        lot_price = lot_price_data['asks'][0]['price'] # Buy mode - 使用賣價一檔 (ask_price)
+                    else:
+                        lot_price = 0
+                else:        
+                    if lot_price_data and 'bids' in lot_price_data and len(lot_price_data['bids']) > 0:
+                        lot_price = lot_price_data['bids'][0]['price'] # Sell mode - 使用買價一檔 (bid_price)
+                    else:
+                        lot_price = 0
 
-    # 取得即時價格
-    for i, stock_id in enumerate(stock_ids):
-        if trade_toggles[i]:
-            if stock_id in g_track_stock_realtime_data and 'realtime' in g_track_stock_realtime_data[stock_id]:
-                if g_track_stock_realtime_data[stock_id]['success']:
-                    realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
-                    if buy_sell:  # Buy mode - 使用賣價一檔 (ask_price)
-                        if 'best_ask_price' in realtime_data and len(realtime_data['best_ask_price']) > 0:
-                            price = float(realtime_data['best_ask_price'][0]) if realtime_data['best_ask_price'][0] != '-' else 0
-                        else:
-                            price = 0
-                    else:  # Sell mode - 使用買價一檔 (bid_price)
-                        if 'best_bid_price' in realtime_data and len(realtime_data['best_bid_price']) > 0:
-                            price = float(realtime_data['best_bid_price'][0]) if realtime_data['best_bid_price'][0] != '-' else 0
-                        else:
-                            price = 0
-                    prices.append(price)
+                # 取得零股價格
+                oddlot_price_data = esun_get_stock_price("ODDLOT", stock_id)
+                if buy_sell:
+                    if oddlot_price_data and 'asks' in oddlot_price_data and len(oddlot_price_data['asks']) > 0:
+                        oddlot_price = oddlot_price_data['asks'][0]['price']
+                    else:
+                        oddlot_price = 0
+
+                else:
+                    if lot_price_data and 'bids' in oddlot_price_data and len(oddlot_price_data['bids']) > 0:
+                        oddlot_price = oddlot_price_data['bids'][0]['price']
+                    else:
+                        oddlot_price = 0
+
+                prices.append(lot_price)
+                oddlot_prices.append(oddlot_price)
+            else:
+                prices.append(None)
+                oddlot_prices.append(None)
+    else:
+        # 取得即時價格
+        for i, stock_id in enumerate(stock_ids):
+            if trade_toggles[i]:
+                if stock_id in g_track_stock_realtime_data and 'realtime' in g_track_stock_realtime_data[stock_id]:
+                    if g_track_stock_realtime_data[stock_id]['success']:
+                        realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
+                        if buy_sell:  # Buy mode - 使用賣價一檔 (ask_price)
+                            if 'best_ask_price' in realtime_data and len(realtime_data['best_ask_price']) > 0:
+                                price = float(realtime_data['best_ask_price'][0]) if realtime_data['best_ask_price'][0] != '-' else 0
+                            else:
+                                price = 0
+                        else:  # Sell mode - 使用買價一檔 (bid_price)
+                            if 'best_bid_price' in realtime_data and len(realtime_data['best_bid_price']) > 0:
+                                price = float(realtime_data['best_bid_price'][0]) if realtime_data['best_bid_price'][0] != '-' else 0
+                            else:
+                                price = 0
+                        prices.append(price)
+                        oddlot_prices.append(None)
+                    else:
+                        prices.append(0)
+                        oddlot_prices.append(None)
                 else:
                     prices.append(0)
+                    oddlot_prices.append(None)
             else:
-                prices.append(0)
-        else:
-            prices.append(None)
+                prices.append(None)
+                oddlot_prices.append(None)
 
     # Manual 模式或 average-amount 未生成或為 0
     if not funding_strategy or average_amount is None:
         quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
         odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
-        return prices, quantities, odd_lots
+        return prices, quantities, odd_lots, oddlot_prices
 
     if average_amount == 0:
         quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
         odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
-        return prices, quantities, odd_lots
+        return prices, quantities, odd_lots, oddlot_prices
 
     # 平均分配投資金額
     valid_indices = [i for i, price in enumerate(prices) if trade_toggles[i] and price is not None and price > 0]
@@ -1029,21 +1087,28 @@ def refresh_stock_data_all(n_clicks, buy_sell, funding_strategy, average_amount,
     if valid_count == 0:
         quantities = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
         odd_lots = [0 if trade_toggles[i] else None for i in range(len(stock_ids))]
-        return prices, quantities, odd_lots
+        return prices, quantities, odd_lots, oddlot_prices
 
     amount_per_stock = average_amount / valid_count
-    for i, price in enumerate(prices):
+ 
+    for i, (price, odd_price) in enumerate(zip(prices, oddlot_prices)):
         if i in valid_indices:
-            total_shares = int(amount_per_stock / price)
-            full_lots = total_shares // 1000
-            odd_share = total_shares % 1000
+            if g_login_success:
+                total_shares = int(amount_per_stock / price)
+                full_lots = total_shares // 1000
+                Remaining_amount = amount_per_stock - (full_lots * 1000 * price)
+                odd_share = int(Remaining_amount / odd_price)
+            else:
+                total_shares = int(amount_per_stock / price)
+                full_lots = total_shares // 1000
+                odd_share = total_shares % 1000
             quantities.append(full_lots)
             odd_lots.append(odd_share)
         else:
             quantities.append(0 if trade_toggles[i] else None)
             odd_lots.append(0 if trade_toggles[i] else None)
 
-    return prices, quantities, odd_lots
+    return prices, quantities, odd_lots, oddlot_prices
 
 # 添加實時更新成本顯示的回調
 @app.callback(
@@ -1052,13 +1117,14 @@ def refresh_stock_data_all(n_clicks, buy_sell, funding_strategy, average_amount,
      Output('total-cost-display', 'children')],
     [Input({'type': 'price-input', 'index': ALL}, 'value'),
      Input({'type': 'quantity-input', 'index': ALL}, 'value'),
+     Input({'type': 'odd_price-input', 'index': ALL}, 'value'),  # 新增 odd_price-input
      Input({'type': 'odd-lots-input', 'index': ALL}, 'value'),
      Input('Funding_strategy', 'value'),
      Input('average-amount', 'value'),
      Input({'type': 'trade-toggle', 'index': ALL}, 'value')],
     prevent_initial_call=True
 )
-def update_cost_display(prices, quantities, odd_lots, funding_strategy, average_amount, trade_toggles):
+def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strategy, average_amount, trade_toggles):
     """實時更新估算成本、百分比和總計，odd-lots-input 為 input"""
     costs = []
     percentages = []
@@ -1066,11 +1132,12 @@ def update_cost_display(prices, quantities, odd_lots, funding_strategy, average_
     individual_costs = []
 
     # 計算個別成本與總成本（張數與零股都要算）
-    for price, quantity, odd in zip(prices, quantities, odd_lots):
+    for price, quantity, odd, odd_price in zip(prices, quantities, odd_lots, odd_prices):
         if price is not None and price > 0:
             q = quantity if quantity is not None and quantity > 0 else 0
             o = odd if odd is not None and odd > 0 else 0
-            cost = price * (q * 1000 + o)
+            o_prices = odd_price if odd_price is not None and odd_price > 0 else price
+            cost = (price * q * 1000) + (o * o_prices)
             individual_costs.append(cost)
             total_cost += cost
         else:
