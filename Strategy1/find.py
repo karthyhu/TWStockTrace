@@ -10,7 +10,7 @@ def find_Target(date:str):
     files = [f for f in os.listdir(data_dir) if f.endswith('.json') and f != 'today.json']
     files = sorted(files, reverse=True)
     files_idx = files.index(f'{date}.json')
-    files = files[files_idx:files_idx+5]
+    files = files[files_idx:files_idx+10]
     print(files)
 
     db = pd.DataFrame()
@@ -49,34 +49,32 @@ def find_Target(date:str):
     db = db[db['cv'] < 0.5]
     print(len(db))
 
+    db = db.set_index('Code')
 
     with open('./test.json', 'w', encoding='utf-8') as f:
-        json.dump(db.to_dict(orient='records'), f, ensure_ascii=False, indent=1)
-
+        json.dump(db.to_dict(orient='index'), f, ensure_ascii=False, indent=1)
 
 if __name__ == "__main__":
-    find_Target('1140724')
-    with open(f'{data_dir}/1140725.json', 'r', encoding='utf-8') as f:
+    find_Target('1140728')
+    with open(f'{data_dir}/1140729.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
         data = data['data']
     with open('./test.json', 'r', encoding='utf-8') as f:
         target = json.load(f)
-    for item in target:
-        # print(item['Code'])
-        today_val = data[f"{item['Code']}"][7]
+    for item in target.keys():
+        # print(item)
+        today_val = data[item][7]
         # print(today_val)
-        if float(today_val) >= item['5ma_TradeVolume']*2:
-        # if True:
-            # range = float(data[f"{item['Code']}"][2]) - float(item['ClosingPrice'])/(float(item['ClosingPrice']) if float(item['ClosingPrice']) != 0 else 1)
-            # print(f"item['Code']: {item['Code']}")
-            today_c = float(data[f"{item['Code']}"][2])
-            yesterday_c = float(item['ClosingPrice'])
+
+        if float(today_val) >= target[item]['5ma_TradeVolume']*2:
+            today_c = float(data[item][2])
+            yesterday_c = float(target[item]['ClosingPrice'])
             # print(f'today_c = {today_c}, yesterday_c = {yesterday_c}')
             range = (today_c - yesterday_c) / (yesterday_c)
             # print(f"range: {range}")
             if range > 0.05:
-                print(f"{item['Code']}, {item['Name']}")
+                print(f"{item}, {target[item]['Name']}")
                 # print(f'today_c = {today_c}, yesterday_c = {yesterday_c}')
                 print(f"range: {round(range, 4)}")
 
-                
+
