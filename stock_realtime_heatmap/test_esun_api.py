@@ -171,16 +171,23 @@ if __name__ == '__main__':
     esun_login_with_auth('' , '')
     
     # test.1 撈取股價測試
-    ret = esun_get_stock_price("LOT" , '2010')
-    pprint(ret['asks'])
-    pprint(ret['bids'])
+    # ret = esun_get_stock_price("LOT" , '2010')
+    # pprint(ret['asks'])
+    # pprint(ret['bids'])
     
     # test.2 交易測試
-    ret_1 = esun_send_onder('2010' , "BUY" , "MARKET" , 0 , 2, "LOT")
+    # ret_1 = esun_send_onder('2010' , "BUY" , "MARKET" , 0 , 2, "LOT")
     # pprint(ret_1)
-    ret_2 = esun_send_onder('2010' , "SELL" , "SPEED" , 20 , 1, "ODDLOT" , "YES")
+    # ret_2 = esun_send_onder('2010' , "SELL" , "SPEED" , 20 , 1, "ODDLOT" , "YES")
     # pprint(ret_2)
 
-    result_flag = esun_cancel_all_order()
-    pprint(result_flag)
+    # result_flag = esun_cancel_all_order()
+    # pprint(result_flag)
 
+    # transactions = trade_sdk.get_transactions("0d")
+    # pprint(transactions)
+
+    # 庫存明細
+    # 回傳參考 -> https://www.esunsec.com.tw/trading-platforms/api-trading/docs/trading/reference/python
+    inventories = trade_sdk.get_inventories()
+    pprint(inventories)

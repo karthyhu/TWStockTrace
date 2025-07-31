@@ -176,8 +176,21 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
                 if company_record['公司代號'] == target_code:
                     issue_shares = company_record['已發行普通股數或TDR原股發行股數']
                     break  # 找到後立即跳出迴圈
+
+            last_close_price = float(past_json_data_twse['data'][target_code][2])
+            if  last_close_price == 0:
+                try:
+                    t2_day_path = '../raw_stock_data/daily/twse/T2_Day.json'
+                    with open(t2_day_path, 'r', encoding='utf-8') as f:
+                        t2_day_json = json.load(f)
+                    if t2_day_json['data'].get(target_code) is not None:
+                        last_close_price = float(t2_day_json['data'][target_code][2])
+                        print(f"已從 T2_Day.json 重新取得 {target_code} 收盤價：{t2_day_json['data'][target_code][2]}")
+                except Exception as e:
+                    print(f"讀取 T2_Day.json 失敗：{e}")
+            
             return {
-                'last_close_price': float(past_json_data_twse['data'][target_code][2]), #上市股票收盤價
+                'last_close_price': last_close_price, #上市股票收盤價
                 'stock_name': past_json_data_twse['data'][target_code][1], #上市股票顯示名稱
                 'stock_type': 'TWSE',
                 'issue_shares': float(issue_shares)
@@ -192,8 +205,20 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
                 if company_record['SecuritiesCompanyCode'] == target_code:
                     issue_shares = company_record['IssueShares']
                     break
+                
+            last_close_price = float(past_json_data_tpex['data'][target_code][2])
+            if  last_close_price == 0:
+                try:
+                    t2_day_path = '../raw_stock_data/daily/tpex/T2_Day.json'
+                    with open(t2_day_path, 'r', encoding='utf-8') as f:
+                        t2_day_json = json.load(f)
+                    if t2_day_json['data'].get(target_code) is not None:
+                        last_close_price = float(t2_day_json['data'][target_code][2])
+                        print(f"已從 T2_Day.json 重新取得 {target_code} 收盤價：{t2_day_json['data'][target_code][2]}")
+                except Exception as e:
+                    print(f"讀取 T2_Day.json 失敗：{e}")
             return {
-                'last_close_price': float(past_json_data_tpex['data'][target_code][2]),  #上櫃股票收盤價
+                'last_close_price': last_close_price,  #上櫃股票收盤價
                 'stock_name': past_json_data_tpex['data'][target_code][1], #上櫃股票顯示名稱
                 'stock_type': 'TPEx',
                 'issue_shares': float(issue_shares)
@@ -367,8 +392,8 @@ def load_initial_data():
     analysis_json_path = './my_stock_category.json'
     # past_day_json_path_twse = './STOCK_DAY_ALL.json'
     # past_day_json_path_tpex = './tpex_mainboard_daily_close_quotes.json'
-    past_day_json_path_twse = '../raw_stock_data/daily/twse/today.json'
-    past_day_json_path_tpex = '../raw_stock_data/daily/tpex/today.json'
+    past_day_json_path_twse = '../raw_stock_data/daily/twse/T1_Day.json'
+    past_day_json_path_tpex = '../raw_stock_data/daily/tpex/T1_Day.json'
     company_data_json_path_twse = './comp_data/t187ap03_L.json'
     company_data_json_path_tpex = './comp_data/mopsfin_t187ap03_O.json'
 
@@ -505,7 +530,7 @@ app.layout = html.Div([
     html.Div([
         html.Span("Last Update Time: ", style={'fontWeight': 'bold'}),
         html.Span(id='last-update-time', style={'color': 'blue'})
-    ], style={'textAlign': 'center', 'marginBottom': 20}),
+    ], style={'textAlign': 'center', 'marginBottom': 5}),
     
     # 5. Heatmap or Bubble Chart ----------------------------
     dcc.Graph(id='live-treemap'),
@@ -576,7 +601,7 @@ app.layout = html.Div([
             html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
             daq.ToggleSwitch(id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], 
                            style={'display': 'inline-block', 'marginRight': '20px'}),
-            daq.ToggleSwitch(id='order_type', value=True, label=['Market Order：', 'Limit Order'], 
+            daq.ToggleSwitch(id='order_type', value=True, label=['Market Order：', 'Speed Order'], 
                            style={'display': 'inline-block', 'marginRight': '20px'}),
             daq.ToggleSwitch(id='Funding_strategy', value=True, label=['Manual', 'Average'], 
                            style={'display': 'inline-block', 'marginRight': '10px'}),
@@ -628,7 +653,41 @@ app.layout = html.Div([
                      'height': '100%', 'backgroundColor': 'rgba(0, 0, 0, 0.5)', 'zIndex': '1000'})],
             style={'display': 'none'}
         )
-    ])
+    ]),
+
+    # 8. Stock Transaction List ----------------------------
+    html.Div([
+        html.H1("Stock Transaction List", style={'textAlign': 'center', 'marginTop': 30}),
+        html.Div([
+            html.Div("委託時間", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("股號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("商品", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("委託價格", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("委託股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("成交均價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("成交股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("取消股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("委託書號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+        ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
+        html.Div(id='transaction-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'}),
+    ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'}),
+
+    # 9. Stock Inventory List ----------------------------
+    html.Div([
+        html.H1("Stock Inventory List", style={'textAlign': 'center', 'marginTop': 30}),
+        html.Div([
+            html.Div("股號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("商品", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("剩餘股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("現價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("成交均價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("平衡價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("未實現損益", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("獲利率", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+        ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
+        html.Div(id='inventory-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'}),
+    ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'})
+
 ])
 
 # 處理登入功能
@@ -740,7 +799,7 @@ def update_treemap(n, size_mode, enable_notifications):
         fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
-            margin=dict(t=50, l=10, r=10, b=10),
+            margin=dict(t=5, l=10, r=10, b=10),
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
@@ -1170,63 +1229,68 @@ def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strate
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'value'),
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
-     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),  # 新增零股 State
-     State({'type': 'price-input', 'index': ALL}, 'id')],
+     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),
+     State({'type': 'price-input', 'index': ALL}, 'id'),
+     State({'type': 'cost-display', 'index': ALL}, 'children'),
+     State({'type': 'odd_price-input', 'index': ALL}, 'value'),
+     State('total-cost-display', 'children')],
     prevent_initial_call=True
 )
-def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids):
-    """顯示確認對話框（含零股）"""
+def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids, cost_displays, odd_price_list, total_cost_display):
+    """顯示確認對話框（直接用 cost-display 與 total-cost-display）"""
     if n_clicks == 0 or not selected_group or not prices or not quantities or not odd_lots:
         return {'display': 'none'}, ''
-    
+
     action = "買進" if buy_sell else "賣出"
     order_type = "限價單" if True else "市價單"  # 假設都是限價單
-    
-    # 計算訂單詳情
+
     order_details = []
-    total_cost = 0
-    
     # 檢查是否使用平均投資策略
     if funding_strategy:
         if average_amount:
             order_details.append(html.P(f"💰 投資策略：平均投資，總投資金額：${average_amount:,.0f}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
         else:
             order_details.append(html.P(f"💰 投資策略：平均投資", style={'margin': '5px 0', 'fontWeight': 'bold'}))
-    
+
     order_details.append(html.P(f"📊 交易方向：{action}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
     order_details.append(html.P(f"📋 訂單類型：{order_type}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
     order_details.append(html.Hr())
-    
+
     # 添加股票訂單詳情
     stock_orders = []
-    for i, (price, quantity, odd, stock_id) in enumerate(zip(prices, quantities, odd_lots, ids)):
+    global g_category_json
+    for i, (price, quantity, odd, stock_id, cost_str, odd_price) in enumerate(zip(prices, quantities, odd_lots, ids, cost_displays, odd_price_list)):
         if (i < len(trade_toggles) and trade_toggles[i] and
             price is not None and quantity is not None and odd is not None and
             price > 0 and (quantity > 0 or odd > 0)):
-            cost = price * (quantity * 1000 + odd)
-            total_cost += cost
+            # 依照 selected_group 與 stock_id['index'] 取得股票名稱
+            stock_name = g_category_json['台股'].get(selected_group, {}).get(stock_id['index'], {}).get('股票', '')
             order_text = [
                 html.Span(f"🏦 {stock_id['index']}", style={'fontWeight': 'bold', 'marginRight': '10px'}),
-                html.Span(f"價格：${price:,.2f}", style={'marginRight': '10px'}),
+                html.Span(f"{stock_name}", style={'marginRight': '10px', 'fontWeight': 'bold'}),
+                html.Span(f"價格：${price:,.2f}", style={'marginRight': '10px', 'color': 'green'}),
                 html.Span(f"張數：{quantity}", style={'marginRight': '10px'}),
             ]
             if odd > 0:
-                order_text.append(html.Span(f"零股：{odd}股", style={'marginRight': '10px'}))
-            order_text.append(html.Span(f"成本：${cost:,.0f}", style={'color': 'red', 'fontWeight': 'bold'}))
+                if odd_price is not None and odd_price > 0:
+                    order_text.append(html.Span(f"零股價格：${odd_price:,.2f}", style={'marginRight': '10px', 'color': 'blue'}))
+                order_text.append(html.Span(f"股數：{odd}股", style={'marginRight': '10px'}))
+
+            order_text.append(html.Span(f"成本：{cost_str}", style={'color': 'red', 'fontWeight': 'bold'}))
             stock_orders.append(
                 html.Div(order_text, style={'margin': '5px 0', 'padding': '5px', 'backgroundColor': '#f8f9fa', 'borderRadius': '3px'})
             )
-    
+
     if not stock_orders:
         return {'display': 'none'}, ''
-    
+
     order_details.extend(stock_orders)
     order_details.append(html.Hr())
     order_details.append(
-        html.P(f"💵 總預估成本：${total_cost:,.0f}", 
+        html.P(f"💵 總預估成本：{total_cost_display}", 
                style={'margin': '10px 0', 'fontWeight': 'bold', 'fontSize': '18px', 'color': 'red', 'textAlign': 'center'})
     )
-    
+
     return {'display': 'block'}, order_details
 
 # 處理確認/取消按鈕
@@ -1242,11 +1306,12 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'value'),
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
-     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),  # 新增零股 State
+     State({'type': 'odd_price-input', 'index': ALL}, 'value'),
+     State({'type': 'odd-lots-input', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
-def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids):
+def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_price, odd_lots, ids):
     """處理確認或取消訂單（含零股）"""
     from dash import callback_context
 
