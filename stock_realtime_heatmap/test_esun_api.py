@@ -135,32 +135,78 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
     return trade_sdk.get_order_results()
 
 
+def esun_cancel_specific_order(ord_no):
+    """取消特定委託書編號的訂單
+    Args:
+        ord_no (str): 委託書編號
+    Returns:
+        tuple: (bool, str) - (是否成功取消, 回應訊息)
+    """
+    try:
+        order_list = trade_sdk.get_order_results()
+        if order_list == {}:
+            return False, "委託列表為空"
+        
+        # 尋找指定的委託書編號
+        target_order = None
+        for order in order_list:
+            if order['pre_ord_no'] == ord_no:
+                target_order = order
+                break
+        
+        if target_order is None:
+            return False, f"找不到委託書編號 {ord_no} 的訂單"
+        
+        # 檢查是否有需要取消的數量
+        cancel_shares = target_order['org_qty_share'] - target_order['mat_qty_share']
+        done_cancel_shares = target_order['org_qty_share'] - target_order['cel_qty_share']
+        
+        if cancel_shares == 0 or done_cancel_shares == 0:
+            return False, "此筆委託已完全成交或已取消"
+            
+        # 執行取消委託
+        cancel_ret = trade_sdk.cancel_order(target_order)
+        if cancel_ret['ret_code'] == '000000':
+            return True, f"成功取消委託書號 {ord_no} 的訂單"
+        else:
+            return False, f"取消失敗: {cancel_ret['ret_msg']}"
+            
+    except Exception as e:
+        return False, f"取消過程發生錯誤: {str(e)}"
+
 def esun_cancel_all_order():
-    
-    cancel_list = []
+    """取消所有可取消的委託單
+    Returns:
+        tuple: (bool, list, dict) - (是否全部成功取消, 成功取消的訂單編號列表, {訂單編號: 取消股數})
+    """
+    success_orders = []  # 成功取消的訂單編號
+    cancel_shares_dict = {}  # 記錄每筆訂單取消的股數
     order_list = trade_sdk.get_order_results()
-    # pprint(order_list)
 
     if order_list == {}:
         print('Your order list is empty')
-        return False
+        return False, [], {}
     
-    initial_flag = True
+    all_success = True  # 用來追蹤是否全部取消成功
+    
     for order in order_list:
-        
         cancel_shares = order['org_qty_share'] - order['mat_qty_share']
         done_cancel_shares = order['org_qty_share'] - order['cel_qty_share']
         
         if cancel_shares == 0 or done_cancel_shares == 0:
             continue
 
-        print(f"order_id <{order['pre_ord_no']}> , stock {order['stock_no']}: cancel number -> {cancel_shares} shares")
+        order_id = order['pre_ord_no']
+        print(f"order_id <{order_id}> , stock {order['stock_no']}: cancel number -> {cancel_shares} shares")
+        
         cancel_ret = trade_sdk.cancel_order(order)
-        # print(cancel_ret)
-        initial_flag |= (cancel_ret['ret_code'] == '000000')
-        cancel_list.append(cancel_ret)
-
-    return initial_flag
+        if cancel_ret['ret_code'] == '000000':
+            success_orders.append(order_id)
+            cancel_shares_dict[order_id] = cancel_shares
+        else:
+            all_success = False
+            
+    return all_success, success_orders, cancel_shares_dict
 
 
 

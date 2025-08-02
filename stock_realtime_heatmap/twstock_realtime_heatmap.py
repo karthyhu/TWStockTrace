@@ -15,6 +15,7 @@ from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
 from test_esun_api import esun_login_with_auth, esun_get_stock_price
+from pprint import pprint
 
 # Global variables
 g_notified_status = {}
@@ -57,7 +58,12 @@ def send_discord_category_notification(treemap_df, fig):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         current_timestamp = time.time()
         
-        embed = {"title": f"📊 台股產業類股漲跌幅 - {current_time}", "color": 0x00ff00, "fields": []}
+        embed = {
+            "title": f"📊 台股產業類股漲跌幅 - {current_time}",
+            "color": 0x00ff00,
+            "description": "",  # 使用 description 而不是 fields
+            "type": "rich"
+        }
         text = ""
 
         # 在 send_discord_category_notification 中加入顏色控制
@@ -119,10 +125,19 @@ def send_discord_category_notification(treemap_df, fig):
             # 僅在狀態變化時通知
             if current_status != previous_status:
                 # 收集族群內的股票及漲幅資訊
-                stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'realtime_change']]
-                stock_info = "\n".join([f"{row['stock_name']} ({row['realtime_change']:+.2f}%)" for _, row in stock_details.iterrows()])
+                stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'stock_type', 'stock_id', 'realtime_change']]
+                stock_info = []
+                
+                for _, row in stock_details.iterrows():
+                    # 根據股票類型產生相對應的 TradingView 連結
+                    market_prefix = 'TWSE' if row['stock_type'] == 'TWSE' else 'TPEX'
+                    tv_link = f"https://tw.tradingview.com/chart/?symbol={market_prefix}%3A{row['stock_id']}"
+                    # 使用 Discord 的 Markdown 格式創建超連結，將股票名稱直接作為連結
+                    stock_line = f"[{row['stock_name']} ({row['stock_id']})]({tv_link}) ({row['realtime_change']:+.2f}%)"
+                    stock_info.append(stock_line)
 
-                text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n{stock_info}\n"
+                stock_info_text = "\n".join(stock_info)
+                text += f"{emoji} **{cat}** ({cnt}檔): {mean:+.2f}%\n{stock_info_text}\n"
 
                 # 更新記錄
                 g_notified_status[cat] = {"status": current_status, "last_mean": mean}
@@ -132,7 +147,7 @@ def send_discord_category_notification(treemap_df, fig):
                 # g_notified_status[cat]["last_mean"] = mean -> 不要加，會導致緩衝區無法在界線即時通報
 
         if text:
-            embed['fields'].append({"name": "", "value": text, "inline": False})
+            embed['description'] = text  # 直接將內容放入 description
             payload = {"embeds": [embed]}
             resp = requests.post(webhook_url, json=payload)
             
@@ -623,9 +638,9 @@ app.layout = html.Div([
         html.Div(id='stock-input-container', style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div([
             html.Button("Refresh", id='refersh-button', n_clicks=0, 
-                       style={'display': 'inline-block', 'marginRight': '20px'}),
+                       style={ 'backgroundColor': "#2863a7", 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px' }),
             html.Button("Send Order", id='confirm-order-button', n_clicks=0, 
-                       style={'display': 'inline-block'})
+                       style={ 'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer' })
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'}),
         
@@ -659,17 +674,25 @@ app.layout = html.Div([
     html.Div([
         html.H1("Stock Transaction List", style={'textAlign': 'center', 'marginTop': 30}),
         html.Div([
-            html.Div("委託時間", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("股號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("商品", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("委託價格", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("委託股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("成交均價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("成交股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("取消股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("委託書號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order Time", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Stock", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Action", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order Quantity(股)", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Cancelled Quantity", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Filled Quantity", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Average Fill Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order No.", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Cancel", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'})
         ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
-        html.Div(id='transaction-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'}),
+        html.Div(id='transaction-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd'}),
+        # Transaction List Buttons
+        html.Div([
+            html.Button("Refresh", id='transaction-refresh-button', n_clicks=0,
+                       style={ 'backgroundColor': '#2863a7', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px' }),
+            html.Button("Cancel All", id='transaction-cancel-all-button', n_clicks=0,
+                       style={ 'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer' })
+        ], style={'marginTop': '10px', 'textAlign': 'center'})
     ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'}),
 
     # 9. Stock Inventory List ----------------------------
@@ -1356,6 +1379,240 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
 
     return {'display': 'none'}, ''
 
+
+# 處理交易明細列表重新整理按鈕
+@app.callback(
+    Output('transaction-list-container', 'children'),
+    Input('transaction-refresh-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def refresh_transaction_list(n_clicks):
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    if not g_login_success:
+        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center'})
+
+    try:
+        from test_esun_api import trade_sdk
+        transactions = trade_sdk.get_order_results()
+        # pprint(transactions)
+        if not transactions:
+            return html.Div("無交易記錄", style={'textAlign': 'center'})
+
+        transaction_rows = []
+        for trans in transactions:
+            transaction_rows.append(
+                html.Div([
+                    html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['stock_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['buy_sell']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('od_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['org_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['cel_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['mat_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('avg_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['pre_ord_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(
+                        html.Button("取消", 
+                                  id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                                  n_clicks=0,
+                                  style={
+                                      'backgroundColor': '#dc3545',
+                                      'color': 'white',
+                                      'border': 'none',
+                                      'borderRadius': '3px',
+                                      'cursor': 'pointer',
+                                      'fontSize': '12px'
+                                  }),
+                        style={'width': '10.0%', 'display': 'inline-block'}
+                    ),
+                ], style={'marginBottom': '5px', 'borderBottom': '1px solid #ddd'})
+            )
+        
+        return transaction_rows
+
+    except Exception as e:
+        return html.Div(f"更新失敗: {str(e)}", style={'color': 'red', 'textAlign': 'center'})
+
+# 處理取消所有訂單按鈕
+@app.callback(
+    Output('transaction-list-container', 'children', allow_duplicate=True),
+    Input('transaction-cancel-all-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def cancel_all_transactions(n_clicks):
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    if not g_login_success:
+        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center'})
+
+    try:
+        from test_esun_api import esun_cancel_all_order, trade_sdk
+        
+        # 執行取消所有訂單
+        all_success, success_orders, cancel_shares = esun_cancel_all_order()
+        
+        # 重新取得最新交易列表
+        transactions = trade_sdk.get_order_results()
+        
+        if not transactions:
+            return html.Div("目前無交易記錄", style={'textAlign': 'center'})
+
+        # 準備顯示內容
+        content = []
+        
+        # 顯示取消結果訊息
+        if success_orders:
+            message = html.Div([
+                html.Div("訂單取消結果：", 
+                        style={'fontWeight': 'bold', 'marginBottom': '5px', 'color': 'black'}),
+                *[html.Div(f"✅ 已取消委託單 {order_id}，取消股數：{cancel_shares[order_id]}", 
+                          style={'color': 'green', 'marginBottom': '2px'})
+                  for order_id in success_orders]
+            ], style={'backgroundColor': '#e8f5e9', 'padding': '10px', 'marginBottom': '10px', 'borderRadius': '5px'})
+        else:
+            message = html.Div("無需要取消的委託單", 
+                             style={'color': 'blue', 'padding': '10px', 'marginBottom': '10px', 
+                                   'textAlign': 'center', 'backgroundColor': '#e3f2fd', 'borderRadius': '5px'})
+        content.append(message)
+        
+        # 更新交易列表
+        transaction_rows = []
+        for trans in transactions:
+            # 檢查這筆訂單是否可以被取消
+            can_cancel = (trans['org_qty_share'] - trans['mat_qty_share'] > 0 and 
+                        trans['org_qty_share'] - trans['cel_qty_share'] > 0)
+            
+            transaction_rows.append(
+                html.Div([
+                    html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['stock_no']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['buy_sell']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('od_price', '-')}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['org_qty_share']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['cel_qty_share']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['mat_qty_share']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('avg_price', '-')}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['pre_ord_no']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(
+                        html.Button(
+                            "取消",
+                            id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                            n_clicks=0,
+                            disabled=not can_cancel,
+                            style={
+                                'backgroundColor': '#dc3545' if can_cancel else '#6c757d',
+                                'color': 'white',
+                                'border': 'none',
+                                'borderRadius': '3px',
+                                'cursor': 'pointer' if can_cancel else 'not-allowed',
+                                'fontSize': '12px',
+                                'opacity': '1' if can_cancel else '0.65'
+                            }
+                        ),
+                        style={'width': '10.0%', 'display': 'inline-block'}
+                    ),
+                ], style={'marginBottom': '5px', 'borderBottom': '1px solid #ddd'})
+            )
+        
+        content.extend(transaction_rows)
+        return content
+
+    except Exception as e:
+        return html.Div(f"取消失敗: {str(e)}", style={'color': 'red', 'textAlign': 'center'})
+
+# 處理個別訂單取消按鈕
+@app.callback(
+    Output('transaction-list-container', 'children', allow_duplicate=True),
+    Input({'type': 'cancel-order-button', 'index': ALL}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def cancel_specific_order(n_clicks_list):
+    if not any(n for n in n_clicks_list if n):  # 檢查是否有按鈕被點擊
+        raise PreventUpdate
+
+    if not g_login_success:
+        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center'})
+
+    # 找出被點擊的按鈕
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    ord_no = eval(button_id)['index']  # 取得訂單編號
+
+    try:
+        from test_esun_api import esun_cancel_specific_order, trade_sdk
+        
+        # 重新取得最新交易列表
+        transactions = trade_sdk.get_order_results()
+        if not transactions:
+            return html.Div("目前無交易記錄", style={'textAlign': 'center'})
+            
+        # 取消特定訂單
+        success, message = esun_cancel_specific_order(ord_no)
+        
+        # 準備渲染交易列表和訊息
+        content = []
+        
+        # 加入操作結果訊息
+        message_style = {'textAlign': 'center', 'marginBottom': '10px', 'padding': '10px'}
+        if not success:
+            message_style['color'] = 'red'
+            message_style['backgroundColor'] = '#ffebee'
+        else:
+            message_style['color'] = 'green'
+            message_style['backgroundColor'] = '#e8f5e9'
+        content.append(html.Div(message, style=message_style))
+
+        # 更新交易列表顯示
+        transaction_rows = []
+        for trans in transactions:
+            # 檢查這筆訂單是否可以被取消
+            can_cancel = (trans['org_qty_share'] - trans['mat_qty_share'] > 0 and 
+                        trans['org_qty_share'] - trans['cel_qty_share'] > 0)
+            
+            transaction_rows.append(
+                html.Div([
+                    html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['stock_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['buy_sell']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('od_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['org_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['cel_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['mat_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('avg_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['pre_ord_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(
+                        html.Button(
+                            "取消", 
+                            id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                            n_clicks=0,
+                            disabled=not can_cancel,  # 如果不能取消就禁用按鈕
+                            style={
+                                'backgroundColor': '#dc3545' if can_cancel else '#6c757d',
+                                'color': 'white',
+                                'border': 'none',
+                                'borderRadius': '3px',
+                                'cursor': 'pointer' if can_cancel else 'not-allowed',
+                                'fontSize': '12px',
+                                'opacity': '1' if can_cancel else '0.65'
+                            }
+                        ),
+                        style={'width': '10.0%', 'display': 'inline-block'}
+                    ),
+                ], style={'marginBottom': '5px', 'borderBottom': '1px solid #ddd'})
+            )
+        
+        # 將交易列表加入到內容中
+        content.extend(transaction_rows)
+        return content
+
+    except Exception as e:
+        return html.Div(f"取消失敗: {str(e)}", style={'color': 'red', 'textAlign': 'center'})
 
 if __name__ == '__main__':
     app.run(debug=True)
