@@ -10,7 +10,7 @@ def find_Target(date:str):
     files = [f for f in os.listdir(data_dir) if f.endswith('.json') and f != 'today.json']
     files = sorted(files, reverse=True)
     files_idx = files.index(f'{date}.json')
-    files = files[files_idx:files_idx+10]
+    files = files[files_idx:files_idx+5]
     print(files)
 
     db = pd.DataFrame()
@@ -55,26 +55,40 @@ def find_Target(date:str):
         json.dump(db.to_dict(orient='index'), f, ensure_ascii=False, indent=1)
 
 if __name__ == "__main__":
-    find_Target('1140728')
-    with open(f'{data_dir}/1140729.json', 'r', encoding='utf-8') as f:
+    find_Target('1140804')
+    with open(f'{data_dir}/1140805.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
         data = data['data']
     with open('./test.json', 'r', encoding='utf-8') as f:
         target = json.load(f)
+    count = 0
+    answer_list = []
     for item in target.keys():
-        # print(item)
+        if item not in data:
+            print(f"Code {item} not found in data.")
+            continue
         today_val = data[item][7]
         # print(today_val)
 
         if float(today_val) >= target[item]['5ma_TradeVolume']*2:
-            today_c = float(data[item][2])
+            today_c = float(data[item][2]) # ClosingPrice
             yesterday_c = float(target[item]['ClosingPrice'])
             # print(f'today_c = {today_c}, yesterday_c = {yesterday_c}')
             range = (today_c - yesterday_c) / (yesterday_c)
             # print(f"range: {range}")
-            if range > 0.05:
-                print(f"{item}, {target[item]['Name']}")
-                # print(f'today_c = {today_c}, yesterday_c = {yesterday_c}')
-                print(f"range: {round(range, 4)}")
+            if range > 0.00:
+                # print(f'today_c = {today_c}, yesterday_c = {yesterday_c}')                print(f"range: {round(range, 4)}")
+                answer_list.append({
+                    "code": item,
+                    # "name": target[item]['Name'],
+                    # "today_val": today_val,
+                    # "yesterday_val": target[item]['ClosingPrice'],
+                    "range": round(range, 4)
+                })
+            count += 1
+    answer_list = sorted(answer_list, key=lambda x: x['range'], reverse=True)
+    for data in answer_list:
+        print(data)
+    print(f"Total count: {count}")
 
 
