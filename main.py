@@ -8,6 +8,7 @@ import TPEX_manager
 import TWSE_manager
 import datetime
 import timenormalyize as tn
+import genSuspendtrading as gst
 
 
 
@@ -226,5 +227,8 @@ if __name__ == "__main__":
     print("開始更新上櫃資料...")
     TPEX_manager.daily_trace(date)
     print("=" * 50 + "\n")
+    
+    print("開始更新當日暫停交易資料...")
+    gst.get_suspend_trading(date)
 
     print("Update completed.")
