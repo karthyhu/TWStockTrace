@@ -14,7 +14,7 @@ import plotly.io as pio
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
-from test_esun_api import esun_login_with_auth, esun_get_stock_price
+from test_esun_api import esun_login_with_auth, esun_get_stock_price, esun_send_onder
 from pprint import pprint
 
 # Global variables
@@ -1319,7 +1319,9 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
 # 處理確認/取消按鈕
 @app.callback(
     [Output('order-confirmation-modal', 'style', allow_duplicate=True),
-     Output('order-status', 'children')],
+     Output('order-status', 'children'),
+     Output({'type': 'status-display', 'index': ALL}, 'children'),
+     Output({'type': 'status-display', 'index': ALL}, 'style')],
     [Input('confirm-final-order', 'n_clicks'),
      Input('cancel-order', 'n_clicks')],
     [State('buy-sell-toggle', 'value'),
@@ -1331,10 +1333,11 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
      State({'type': 'odd_price-input', 'index': ALL}, 'value'),
      State({'type': 'odd-lots-input', 'index': ALL}, 'value'),
-     State({'type': 'price-input', 'index': ALL}, 'id')],
+     State({'type': 'price-input', 'index': ALL}, 'id'),
+     State('order_type', 'value')],  # 新增 order_type 狀態
     prevent_initial_call=True
 )
-def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_price, odd_lots, ids):
+def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_price, odd_lots, ids, order_type):
     """處理確認或取消訂單（含零股）"""
     from dash import callback_context
 
@@ -1351,8 +1354,13 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
         if not selected_group or not prices or not quantities or not odd_lots:
             return {'display': 'none'}, "請填寫完整的下單資訊！"
 
+        global g_login_success
+        if not g_login_success:
+            return {'display': 'none'}, "請先登入系統！"
+
         action = "買進" if buy_sell else "賣出"
         orders = []
+        order_results = []
 
         # 檢查是否使用平均投資策略
         if funding_strategy:
@@ -1362,22 +1370,83 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                 orders.append(f"使用平均投資策略")
 
         # 只處理 Trade Toggle 為 True 的股票
-        for i, (price, quantity, odd, stock_id) in enumerate(zip(prices, quantities, odd_lots, ids)):
-            if (i < len(trade_toggles) and trade_toggles[i] and
-                price is not None and quantity is not None and odd is not None and
-                price > 0 and (quantity > 0 or odd > 0)):
-                order_str = f"{action} {stock_id['index']}，價格：${price:,.2f}，張數：{quantity}"
-                if odd > 0:
-                    order_str += f"，零股：{odd}股"
-                orders.append(order_str)
+        for i, (price, quantity, odd_lot_price, odd_lot, stock_id) in enumerate(zip(prices, quantities, odd_price, odd_lots, ids)):
+            if (i < len(trade_toggles) and trade_toggles[i]):
+                stock_no = stock_id['index']
+                order_direction = "BUY" if buy_sell else "SELL"
+                
+                # 處理整股下單
+                if quantity is not None and quantity > 0:
+                    try:
+                        # 根據 order_type 切換下單方式
+                        price_type = "SPEED" if order_type else "MARKET"
+                        result = esun_send_onder(
+                            stock_id=stock_no,
+                            order_dir=order_direction,
+                            price_type=price_type,
+                            price=price,
+                            volume=quantity,
+                            is_oddlot="LOT"
+                        )
+                        order_str = f"{action}整股 {stock_no}，價格：${price:,.2f}，張數：{quantity}"
+                        orders.append(order_str)
+                        order_results.append(result)
+                        time.sleep(0.5)  # 避免頻繁下單
+                    except Exception as e:
+                        return {'display': 'none'}, f"整股下單失敗 {stock_no}: {str(e)}"
+
+                # 處理零股下單
+                if odd_lot is not None and odd_lot > 0:
+                    try:
+                        # 如果沒有零股價格，使用整股價格
+                        odd_price_to_use = odd_lot_price if odd_lot_price and odd_lot_price > 0 else price
+                        # 根據 order_type 切換下單方式
+                        price_type = "SPEED" if order_type else "MARKET"
+                        result = esun_send_onder(
+                            stock_id=stock_no,
+                            order_dir=order_direction,
+                            price_type=price_type,
+                            price=odd_price_to_use,
+                            volume=odd_lot,
+                            is_oddlot="ODDLOT"
+                        )
+                        order_str = f"{action}零股 {stock_no}，價格：${odd_price_to_use:,.2f}，股數：{odd_lot}"
+                        orders.append(order_str)
+                        order_results.append(result)
+                        time.sleep(0.5)  # 避免頻繁下單
+                    except Exception as e:
+                        return {'display': 'none'}, f"零股下單失敗 {stock_no}: {str(e)}"
 
         if not orders:
             return {'display': 'none'}, "請填寫完整的下單資訊！"
 
-        # 模擬下單成功
-        return {'display': 'none'}, f"✅ 下單成功！\n" + "\n".join(orders)
+        # 準備狀態顯示
+        status_messages = ["Not ordered"] * len(ids)
+        status_styles = [{'width': '20%', 'display': 'inline-block'}] * len(ids)
+        
+        # 更新每個股票的狀態
+        stock_status_map = {}
+        for i, (stock_id, result) in enumerate(zip(ids, order_results)):
+            if result is not None:
+                status = "✅ 下單成功"
+                style = {'color': 'green', 'width': '20%', 'display': 'inline-block'}
+            else:
+                status = "❌ 下單失敗"
+                style = {'color': 'red', 'width': '20%', 'display': 'inline-block'}
+            stock_status_map[stock_id['index']] = (status, style)
+        
+        # 設置狀態顯示
+        for i, stock_id in enumerate(ids):
+            if stock_id['index'] in stock_status_map:
+                status_messages[i] = stock_status_map[stock_id['index']][0]
+                status_styles[i] = stock_status_map[stock_id['index']][1]
 
-    return {'display': 'none'}, ''
+        # 檢查所有訂單結果
+        all_success = all(result is not None for result in order_results)
+        status = "✅ 下單成功！" if all_success else "⚠️ 部分下單成功"
+        return {'display': 'none'}, f"{status}\n" + "\n".join(orders), status_messages, status_styles
+
+    return {'display': 'none'}, '', status_messages, status_styles
 
 
 # 處理交易明細列表重新整理按鈕
