@@ -269,6 +269,20 @@ class TPEX_manager:
             json.dump(totaldata, f, ensure_ascii=False, indent=4)
             print("save done")
 
+    def genpassdayfile(self, start_date: str, during_days: int = 2):
+        all_files = os.listdir(self.daily_data_dir)
+        all_files = [f for f in all_files if f.endswith('.json')]
+        #逆序
+        all_files.sort(reverse=True)
+        start_date = tn.normalize_date(start_date, "ROC", "")
+        start_index = all_files.index(f'{start_date}.json')
+        for i in range(during_days):
+            with open(f'{self.daily_data_dir}/{all_files[start_index + i]}', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            with open(f'{self.daily_data_dir}/T{i+1}_Day.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
+
 
 def daily_trace(date: str = None):
     # 取得今天日期
@@ -283,12 +297,14 @@ def daily_trace(date: str = None):
     if data:
         trace_manager.save_file(data, 'today')
         print(f"{date} 的資料已成功儲存。")
+    trace_manager.genpassdayfile(date, 2)
 
 
 if __name__ == "__main__":
     # 測試用
     # daily_trace('114/07/17')
     t = TPEX_manager()
-    t.download_get_loop('114/07/14')
+    # t.download_get_loop('114/07/14')
     # t.download_get_once('114/07/15')
+    # t.genpassdayfile('114/08/05', 2)
 

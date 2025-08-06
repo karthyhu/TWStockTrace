@@ -165,7 +165,20 @@ class TWSE_manager:
             print(f"📁 檔案已儲存: {filename}")
         except Exception as e:
             print(f"❌ 儲存檔案時發生錯誤: {e}")
-
+            
+    def genpassdayfile(self, start_date: str, during_days: int = 2):
+        all_files = os.listdir(self.daily_data_dir)
+        all_files = [f for f in all_files if f.endswith('.json')]
+        #逆序
+        all_files.sort(reverse=True)
+        start_date = tn.normalize_date(start_date, "ROC", "")
+        start_index = all_files.index(f'{start_date}.json')
+        for i in range(during_days):
+            with open(f'{self.daily_data_dir}/{all_files[start_index + i]}', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            with open(f'{self.daily_data_dir}/T{i+1}_Day.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
 
 def update_trace_json(date):
     """更新 trace.json 的便利函數（僅 TWSE）"""
@@ -181,12 +194,15 @@ def daily_trace(date: str = None):
     data = manager.download_internalurl(date)
     if data:
         manager.save_file(data, f"today.json")
+    manager.genpassdayfile(date, 2)
     return date
 
 
 if __name__ == "__main__":
     # 測試下載功能
     print("測試台股資料下載...")
-    manager = TWSE_manager()
-    date = manager.download_openapi()
-    # date = manager.download_internalurl("1140724")
+    t = TWSE_manager()
+    # date = t.download_openapi()
+    # date = t.download_internalurl("1140724")
+    # t.genpassdayfile('114/08/05', 2)
+
