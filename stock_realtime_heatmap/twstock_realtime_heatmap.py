@@ -699,16 +699,21 @@ app.layout = html.Div([
     html.Div([
         html.H1("Stock Inventory List", style={'textAlign': 'center', 'marginTop': 30}),
         html.Div([
-            html.Div("股號", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("商品", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("剩餘股數", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("現價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("成交均價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("平衡價", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("未實現損益", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("獲利率", style={'width': '11%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Trade Type", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Symbol", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Remaining Shares", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Current Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Average Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Balance Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Unrealized P&L", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Profit Rate", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'})
         ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
-        html.Div(id='inventory-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd', 'padding': '10px'}),
+        html.Div(id='inventory-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd'}),
+        # Inventory List Button
+        html.Div([
+            html.Button("Refresh", id='inventory-refresh-button', n_clicks=0,
+                       style={'backgroundColor': '#2863a7', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'})
+        ], style={'marginTop': '10px', 'textAlign': 'center'})
     ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'})
 
 ])
@@ -1264,8 +1269,8 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
     if n_clicks == 0 or not selected_group or not prices or not quantities or not odd_lots:
         return {'display': 'none'}, ''
 
-    action = "買進" if buy_sell else "賣出"
-    order_type = "限價單" if True else "市價單"  # 假設都是限價單
+    action = "BUY" if buy_sell else "SELL"
+    order_type = "SPEED" if True else "MARKET"
 
     order_details = []
     # 檢查是否使用平均投資策略
@@ -1346,17 +1351,21 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
 
     button_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
+    # 初始化狀態消息和樣式（用於取消和確認）
+    status_messages = ["Not ordered"] * len(ids)
+    status_styles = [{'width': '20%', 'display': 'inline-block'}] * len(ids)
+
     if button_id == 'cancel-order':
-        return {'display': 'none'}, '訂單已取消'
+        return {'display': 'none'}, '訂單已取消', status_messages, status_styles
 
     elif button_id == 'confirm-final-order':
         # 執行實際下單邏輯
         if not selected_group or not prices or not quantities or not odd_lots:
-            return {'display': 'none'}, "請填寫完整的下單資訊！"
+            return {'display': 'none'}, "請填寫完整的下單資訊！", status_messages, status_styles
 
         global g_login_success
         if not g_login_success:
-            return {'display': 'none'}, "請先登入系統！"
+            return {'display': 'none'}, "請先登入系統！", status_messages, status_styles
 
         action = "買進" if buy_sell else "賣出"
         orders = []
@@ -1393,7 +1402,7 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                         order_results.append(result)
                         time.sleep(0.5)  # 避免頻繁下單
                     except Exception as e:
-                        return {'display': 'none'}, f"整股下單失敗 {stock_no}: {str(e)}"
+                        return {'display': 'none'}, f"整股下單失敗 {stock_no}: {str(e)}", status_messages, status_styles
 
                 # 處理零股下單
                 if odd_lot is not None and odd_lot > 0:
@@ -1415,10 +1424,10 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                         order_results.append(result)
                         time.sleep(0.5)  # 避免頻繁下單
                     except Exception as e:
-                        return {'display': 'none'}, f"零股下單失敗 {stock_no}: {str(e)}"
+                        return {'display': 'none'}, f"零股下單失敗 {stock_no}: {str(e)}", status_messages, status_styles
 
         if not orders:
-            return {'display': 'none'}, "請填寫完整的下單資訊！"
+            return {'display': 'none'}, "請填寫完整的下單資訊！", status_messages, status_styles
 
         # 準備狀態顯示
         status_messages = ["Not ordered"] * len(ids)
@@ -1682,6 +1691,50 @@ def cancel_specific_order(n_clicks_list):
 
     except Exception as e:
         return html.Div(f"取消失敗: {str(e)}", style={'color': 'red', 'textAlign': 'center'})
+
+@app.callback(
+    Output('inventory-list-container', 'children'),
+    Input('inventory-refresh-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def update_inventory_list(n_clicks):
+    """更新庫存列表"""
+    if not g_login_success:
+        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center', 'padding': '10px'})
+
+    try:
+        from test_esun_api import trade_sdk
+        inventory_data = trade_sdk.get_inventories()
+        
+        if not inventory_data:
+            return html.Div("無庫存資料", style={'textAlign': 'center', 'padding': '10px'})
+            
+        from test_esun_api import format_inventory_data
+        formatted_data = format_inventory_data(inventory_data)
+        
+        # 創建列表項目
+        inventory_items = []
+        for item in formatted_data:
+            # 計算顏色 (紅色表示獲利，綠色表示虧損)
+            profit_rate_value = float(item['profit_rate'])
+            color = 'red' if profit_rate_value > 0 else 'green'
+            
+            inventory_items.append(html.Div([
+                html.Div(item['trade_type'], style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(item['symbol'], style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(item['remaining_shares'], style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(f"{item['current_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(f"{item['average_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(f"{item['balance_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
+                html.Div(f"{item['unrealized_pl']}", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
+                html.Div(f"{item['profit_rate']}%", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
+            ], style={'borderBottom': '1px solid #ddd'}))
+            
+        return html.Div(inventory_items)
+        
+    except Exception as e:
+        return html.Div(f"更新庫存資料時發生錯誤: {str(e)}", 
+                       style={'color': 'red', 'textAlign': 'center', 'padding': '10px'})
 
 if __name__ == '__main__':
     app.run(debug=True)

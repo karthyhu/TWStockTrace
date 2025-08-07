@@ -208,7 +208,39 @@ def esun_cancel_all_order():
             
     return all_success, success_orders, cancel_shares_dict
 
-
+def format_inventory_data(inventory_data):
+    """
+    格式化庫存資料為指定格式
+    Args:
+        inventory_data (list): 從 get_inventories() 獲得的原始庫存資料
+    Returns:
+        list: 格式化後的庫存資料列表
+    """
+    formatted_data = []
+    
+    for item in inventory_data:
+        # 計算未實現損益
+        unrealized_pl = sum(float(detail.get('make_a', '0')) for detail in item.get('stk_dats', []))
+            
+        formatted_item = {
+            'trade_type': {
+                '0': 'Cash',
+                '3': 'Margin',
+                '4': 'Short',
+                '9': 'DayTrading',
+                'A': 'DayTradingSell'
+            }.get(item['trade'], 'Unknown'),
+            'symbol': f"{item['stk_no']} {item['stk_na']}",
+            'remaining_shares': item['qty_l'],
+            'current_price': item['price_mkt'],
+            'average_price': item['price_avg'],
+            'balance_price': item['price_evn'],
+            'unrealized_pl': unrealized_pl,
+            'profit_rate': item['make_a_per']
+        }
+        formatted_data.append(formatted_item)
+    
+    return formatted_data
 
 
 if __name__ == '__main__':
@@ -236,4 +268,9 @@ if __name__ == '__main__':
     # 庫存明細
     # 回傳參考 -> https://www.esunsec.com.tw/trading-platforms/api-trading/docs/trading/reference/python
     inventories = trade_sdk.get_inventories()
-    pprint(inventories)
+    # pprint(inventories)
+
+    # 測試格式化函數
+    formatted_inventories = format_inventory_data(inventories)
+    print("\n格式化後的庫存資料:")
+    pprint(formatted_inventories)
