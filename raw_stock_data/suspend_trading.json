@@ -1,6 +1,72 @@
 {
  "calendars": [
   {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-09T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250909",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-08T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250908",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-05T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250905",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-04T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250904",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-03T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250903",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "4945.TWO",
+   "symbolName": "陞達科技",
+   "exchange": "TWO",
+   "date": "2025-09-02T00:00:00+08:00",
+   "eventId": "SuspTxn-4945-20250902",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
    "symbol": "3321.TW",
    "symbolName": "同泰",
    "exchange": "TAI",
@@ -8,8 +74,8 @@
    "eventId": "SuspTxn-3321-20250825",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3321.TW",
@@ -19,8 +85,8 @@
    "eventId": "SuspTxn-3321-20250822",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -30,8 +96,8 @@
    "eventId": "SuspTxn-3290-20250822",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -41,8 +107,8 @@
    "eventId": "SuspTxn-2327-20250822",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:01+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3321.TW",
@@ -52,8 +118,8 @@
    "eventId": "SuspTxn-3321-20250821",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -63,8 +129,8 @@
    "eventId": "SuspTxn-3290-20250821",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -74,8 +140,8 @@
    "eventId": "SuspTxn-2327-20250821",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:01+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3321.TW",
@@ -85,8 +151,8 @@
    "eventId": "SuspTxn-3321-20250820",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -96,8 +162,8 @@
    "eventId": "SuspTxn-3290-20250820",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -107,8 +173,8 @@
    "eventId": "SuspTxn-2327-20250820",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3321.TW",
@@ -118,8 +184,8 @@
    "eventId": "SuspTxn-3321-20250819",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -129,8 +195,8 @@
    "eventId": "SuspTxn-3290-20250819",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -140,8 +206,8 @@
    "eventId": "SuspTxn-2327-20250819",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -151,8 +217,8 @@
    "eventId": "SuspTxn-3290-20250818",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -162,8 +228,8 @@
    "eventId": "SuspTxn-2327-20250818",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -173,8 +239,8 @@
    "eventId": "SuspTxn-3290-20250815",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -184,8 +250,41 @@
    "eventId": "SuspTxn-2327-20250815",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "62884.TWO",
+   "symbolName": "聯嘉四",
+   "exchange": "TWO",
+   "date": "2025-08-14T00:00:00+08:00",
+   "eventId": "SuspTxn-62884-20250814",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "6288.TW",
+   "symbolName": "聯嘉",
+   "exchange": "TAI",
+   "date": "2025-08-14T00:00:00+08:00",
+   "eventId": "SuspTxn-6288-20250814",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
+  },
+  {
+   "symbol": "5481.TWO",
+   "symbolName": "新華",
+   "exchange": "TWO",
+   "date": "2025-08-14T00:00:00+08:00",
+   "eventId": "SuspTxn-5481-20250814",
+   "eventType": "suspendTransaction",
+   "eventTypeName": "暫停交易",
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "3290.TWO",
@@ -195,8 +294,8 @@
    "eventId": "SuspTxn-3290-20250814",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "2327.TW",
@@ -206,8 +305,8 @@
    "eventId": "SuspTxn-2327-20250814",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -217,8 +316,8 @@
    "eventId": "SuspTxn-62884-20250813",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -228,8 +327,8 @@
    "eventId": "SuspTxn-6288-20250813",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -239,8 +338,8 @@
    "eventId": "SuspTxn-5481-20250813",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -250,8 +349,8 @@
    "eventId": "SuspTxn-62884-20250812",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -261,8 +360,8 @@
    "eventId": "SuspTxn-6288-20250812",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -272,8 +371,8 @@
    "eventId": "SuspTxn-5481-20250812",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -283,8 +382,8 @@
    "eventId": "SuspTxn-62884-20250811",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -294,8 +393,8 @@
    "eventId": "SuspTxn-6288-20250811",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -305,8 +404,8 @@
    "eventId": "SuspTxn-5481-20250811",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "8291.TWO",
@@ -316,8 +415,8 @@
    "eventId": "SuspTxn-8291-20250808",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -327,8 +426,8 @@
    "eventId": "SuspTxn-62884-20250808",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -338,8 +437,8 @@
    "eventId": "SuspTxn-6288-20250808",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -349,8 +448,8 @@
    "eventId": "SuspTxn-5481-20250808",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "8291.TWO",
@@ -360,8 +459,8 @@
    "eventId": "SuspTxn-8291-20250807",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -371,8 +470,8 @@
    "eventId": "SuspTxn-62884-20250807",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -382,8 +481,8 @@
    "eventId": "SuspTxn-6288-20250807",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -393,8 +492,8 @@
    "eventId": "SuspTxn-5481-20250807",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-07T00:25:04+08:00",
+   "updatedTs": "2025-08-06T17:00:06+08:00"
   },
   {
    "symbol": "8291.TWO",
@@ -404,8 +503,8 @@
    "eventId": "SuspTxn-8291-20250806",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-06T18:07:24+08:00",
+   "updatedTs": "2025-08-06T11:20:00+08:00"
   },
   {
    "symbol": "62884.TWO",
@@ -415,8 +514,8 @@
    "eventId": "SuspTxn-62884-20250806",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-06T18:07:24+08:00",
+   "updatedTs": "2025-08-06T11:20:00+08:00"
   },
   {
    "symbol": "6288.TW",
@@ -426,8 +525,8 @@
    "eventId": "SuspTxn-6288-20250806",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-06T18:07:24+08:00",
+   "updatedTs": "2025-08-06T11:20:00+08:00"
   },
   {
    "symbol": "5481.TWO",
@@ -437,8 +536,8 @@
    "eventId": "SuspTxn-5481-20250806",
    "eventType": "suspendTransaction",
    "eventTypeName": "暫停交易",
-   "createdTs": "2025-08-06T00:25:04+08:00",
-   "updatedTs": "2025-08-05T17:00:00+08:00"
+   "createdTs": "2025-08-06T18:07:24+08:00",
+   "updatedTs": "2025-08-06T11:20:00+08:00"
   },
   {
    "symbol": "020019",
@@ -2100,109 +2199,10 @@
    "eventTypeName": "暫停交易",
    "createdTs": "2025-06-20T18:07:23+08:00",
    "updatedTs": "2025-06-20T11:20:01+08:00"
-  },
-  {
-   "symbol": "3202",
-   "symbolName": "樺晟",
-   "exchange": null,
-   "date": "2025-06-20T00:00:00+08:00",
-   "eventId": "SuspTxn-3202-20250620",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-20T18:07:23+08:00",
-   "updatedTs": "2025-06-20T11:20:01+08:00"
-  },
-  {
-   "symbol": "2371.TW",
-   "symbolName": "大同",
-   "exchange": "TAI",
-   "date": "2025-06-20T00:00:00+08:00",
-   "eventId": "SuspTxn-2371-20250620",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-20T18:07:23+08:00",
-   "updatedTs": "2025-06-20T11:20:01+08:00"
-  },
-  {
-   "symbol": "1225.TW",
-   "symbolName": "福懋油",
-   "exchange": "TAI",
-   "date": "2025-06-20T00:00:00+08:00",
-   "eventId": "SuspTxn-1225-20250620",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-20T18:07:23+08:00",
-   "updatedTs": "2025-06-20T11:20:01+08:00"
-  },
-  {
-   "symbol": "5481.TWO",
-   "symbolName": "新華",
-   "exchange": "TWO",
-   "date": "2025-06-19T00:00:00+08:00",
-   "eventId": "SuspTxn-5481-20250619",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-19T18:07:22+08:00",
-   "updatedTs": "2025-06-19T11:20:00+08:00"
-  },
-  {
-   "symbol": "4763.TW",
-   "symbolName": "材料-KY",
-   "exchange": "TAI",
-   "date": "2025-06-19T00:00:00+08:00",
-   "eventId": "SuspTxn-4763-20250619",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-19T18:07:22+08:00",
-   "updatedTs": "2025-06-19T11:20:00+08:00"
-  },
-  {
-   "symbol": "3202",
-   "symbolName": "樺晟",
-   "exchange": null,
-   "date": "2025-06-19T00:00:00+08:00",
-   "eventId": "SuspTxn-3202-20250619",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-19T18:07:22+08:00",
-   "updatedTs": "2025-06-19T11:20:00+08:00"
-  },
-  {
-   "symbol": "2371.TW",
-   "symbolName": "大同",
-   "exchange": "TAI",
-   "date": "2025-06-19T00:00:00+08:00",
-   "eventId": "SuspTxn-2371-20250619",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-19T18:07:22+08:00",
-   "updatedTs": "2025-06-19T11:20:00+08:00"
-  },
-  {
-   "symbol": "1225.TW",
-   "symbolName": "福懋油",
-   "exchange": "TAI",
-   "date": "2025-06-19T00:00:00+08:00",
-   "eventId": "SuspTxn-1225-20250619",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-19T18:07:22+08:00",
-   "updatedTs": "2025-06-19T11:20:00+08:00"
-  },
-  {
-   "symbol": "5481.TWO",
-   "symbolName": "新華",
-   "exchange": "TWO",
-   "date": "2025-06-18T00:00:00+08:00",
-   "eventId": "SuspTxn-5481-20250618",
-   "eventType": "suspendTransaction",
-   "eventTypeName": "暫停交易",
-   "createdTs": "2025-06-18T18:07:33+08:00",
-   "updatedTs": "2025-06-18T11:20:02+08:00"
   }
  ],
  "pagination": {
-  "resultsTotal": 2091,
+  "resultsTotal": 2097,
   "nextOffset": "200"
  }
 }
