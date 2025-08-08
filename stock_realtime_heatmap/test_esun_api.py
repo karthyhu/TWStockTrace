@@ -8,8 +8,8 @@ import sys
 from io import StringIO
 from datetime import datetime
 
-
 global config , market_sdk , trade_sdk
+
 def esun_login_with_auth(auth_code, password):
 
     pre_inputs = [ auth_code , password ]
@@ -37,7 +37,6 @@ def esun_login_with_auth(auth_code, password):
             
     except Exception as e:
         return False, f"登入過程發生錯誤: {str(e)}", None , None
-    
 
 def esun_get_stock_price(type , stock_id):
     
@@ -65,11 +64,11 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
 
     if stock_id == '':
         print('stock id cant be empty')
-        return None
+        return False, 'stock id cant be empty'
     
     if volume == 0:
         print('order volume cant be 0')
-        return None
+        return False, 'order volume cant be 0'
 
     if order_dir == "BUY":
         send_order_dir = Action.Buy
@@ -77,7 +76,7 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
         send_order_dir = Action.Sell
     else:
         print('Incorrect order direction (BUY or SELL?)')
-        return None
+        return False, 'Incorrect order direction (BUY or SELL?)'
     
     if is_oddlot == "LOT":
         send_is_oddlot = APCode.Common
@@ -85,7 +84,7 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
         send_is_oddlot = APCode.IntradayOdd
     else:
         print('Incorrect volume type (LOT or ODDLOT?)')
-        return None
+        return False, 'Incorrect volume type (LOT or ODDLOT?)'
 
     if price_type == "MARKET":
         send_price_type = PriceFlag.Market
@@ -97,7 +96,7 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
         send_price_type = PriceFlag.Limit
         result = esun_get_stock_price(is_oddlot , stock_id)
         if result == None:
-            return None
+            return False, 'Failed to get stock price'
 
         if order_dir == "BUY": # 使用賣價二檔買之，有機會成交在一檔
             send_price = result['asks'][1]['price']
@@ -106,7 +105,7 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
 
     else:
         print('Incorrect price type (MARKET or LIMIT or SPEED?)')
-        return None
+        return False, 'Incorrect price type (MARKET or LIMIT or SPEED?)'
 
     # 取得當前時間的分與秒
     current_time = datetime.now()
@@ -131,9 +130,14 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
         user_def = time_str
     )
 
-    trade_sdk.place_order(order)
-    return trade_sdk.get_order_results()
-
+    # 送出訂單並獲得回傳結果
+    place_order_result = trade_sdk.place_order(order)
+    
+    # 檢查訂單是否成功送出
+    success = place_order_result['ret_code'] == '000000'
+    message = place_order_result['ret_msg'] if not success else "下單成功"
+    
+    return success, message
 
 def esun_cancel_specific_order(ord_no):
     """取消特定委託書編號的訂單
@@ -190,8 +194,8 @@ def esun_cancel_all_order():
     all_success = True  # 用來追蹤是否全部取消成功
     
     for order in order_list:
-        cancel_shares = order['org_qty_share'] - order['mat_qty_share']
-        done_cancel_shares = order['org_qty_share'] - order['cel_qty_share']
+        cancel_shares = order['org_qty_share'] - order['mat_qty_share'] #都成交完成了 case
+        done_cancel_shares = order['org_qty_share'] - order['cel_qty_share'] #完整取消所有股數 case
         
         if cancel_shares == 0 or done_cancel_shares == 0:
             continue
@@ -208,7 +212,24 @@ def esun_cancel_all_order():
             
     return all_success, success_orders, cancel_shares_dict
 
-def format_inventory_data(inventory_data):
+def esun_get_trade_limits():
+    """
+    獲取交易額度相關資訊
+    Returns:
+        dict: 包含交易額度、融資額度、融券額度的字典
+    """
+    try:
+        status = trade_sdk.get_trade_status()
+        return {
+            'trade_limit': status['trade_limit'],
+            'margin_limit': status['margin_limit'],
+            'short_limit': status['short_limit']
+        }
+    except Exception as e:
+        print(f"獲取交易額度資訊時發生錯誤: {str(e)}")
+        return None
+
+def esun_format_inventory_data():
     """
     格式化庫存資料為指定格式
     Args:
@@ -216,11 +237,14 @@ def format_inventory_data(inventory_data):
     Returns:
         list: 格式化後的庫存資料列表
     """
+
     formatted_data = []
-    
+    inventory_data = trade_sdk.get_inventories()
+
     for item in inventory_data:
         # 計算未實現損益
         unrealized_pl = sum(float(detail.get('make_a', '0')) for detail in item.get('stk_dats', []))
+        total_cost = sum(float(detail.get('pay_n', '0')) for detail in item.get('stk_dats', []))
             
         formatted_item = {
             'trade_type': {
@@ -236,12 +260,13 @@ def format_inventory_data(inventory_data):
             'average_price': item['price_avg'],
             'balance_price': item['price_evn'],
             'unrealized_pl': unrealized_pl,
-            'profit_rate': item['make_a_per']
+            'profit_rate': item['make_a_per'],
+            'total_cost': total_cost,  # 總成本
+            'market_value': item['value_mkt']  # 總市值
         }
         formatted_data.append(formatted_item)
     
     return formatted_data
-
 
 if __name__ == '__main__':
     
@@ -267,10 +292,16 @@ if __name__ == '__main__':
 
     # 庫存明細
     # 回傳參考 -> https://www.esunsec.com.tw/trading-platforms/api-trading/docs/trading/reference/python
-    inventories = trade_sdk.get_inventories()
+    # inventories = trade_sdk.get_inventories()
     # pprint(inventories)
 
     # 測試格式化函數
-    formatted_inventories = format_inventory_data(inventories)
+    formatted_inventories = esun_format_inventory_data()
     print("\n格式化後的庫存資料:")
     pprint(formatted_inventories)
+
+    limits = esun_get_trade_limits()
+    if limits:
+        print(f"交易額度: {limits['trade_limit']}")
+        print(f"融資額度: {limits['margin_limit']}")
+        print(f"融券額度: {limits['short_limit']}")

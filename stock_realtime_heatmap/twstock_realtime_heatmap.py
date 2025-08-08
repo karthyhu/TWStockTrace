@@ -642,7 +642,15 @@ app.layout = html.Div([
             html.Button("Send Order", id='confirm-order-button', n_clicks=0, 
                        style={ 'backgroundColor': '#dc3545', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer' })
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
-        html.Div(id='order-status', style={'textAlign': 'center', 'marginTop': '20px', 'color': 'green'}),
+        html.Div(id='order-status', style={
+            'textAlign': 'center', 
+            'marginTop': '20px', 
+            'padding': '10px',
+            'whiteSpace': 'pre-line',  # 允許換行
+            'wordBreak': 'break-word',  # 確保長文字會換行
+            'maxWidth': '800px',        # 限制最大寬度
+            'margin': '20px auto',       # 水平置中
+        }),
         
         # 確認對話框
         html.Div(id='order-confirmation-modal',
@@ -740,7 +748,21 @@ def handle_login(n_clicks, auth_code, password):
     # 模擬登入驗證過程
     if result:
         g_login_success = True
-        return html.Div("✅ 登入成功！", style={'color': 'green'})
+        # 取得交易額度資訊
+        from test_esun_api import esun_get_trade_limits
+        limits = esun_get_trade_limits()
+        # 組合顯示訊息
+        return html.Div([
+            html.Div("✅ 登入成功！", style={'color': 'green', 'marginBottom': '10px'}),
+            html.Div([
+                html.Span("💰 交易額度: ", style={'fontWeight': 'bold'}),
+                html.Span(f"${limits['trade_limit']:,.0f}", style={'color': 'blue'}),
+                html.Span(" | 💳 融資額度: ", style={'fontWeight': 'bold', 'marginLeft': '15px'}),
+                html.Span(f"${limits['margin_limit']:,.0f}", style={'color': 'blue'}),
+                html.Span(" | 📊 融券額度: ", style={'fontWeight': 'bold', 'marginLeft': '15px'}),
+                html.Span(f"${limits['short_limit']:,.0f}", style={'color': 'blue'})
+            ])
+        ])
     else:
         g_login_success = False
         return html.Div("❌ 登入失敗：" + f"{result_str}" , style={'color': 'red'})
@@ -1288,6 +1310,7 @@ def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strate
      State('Funding_strategy', 'value'),
      State('average-amount', 'value'),
      State('group-dropdown', 'value'),
+     State('order_type', 'value'),
      State({'type': 'trade-toggle', 'index': ALL}, 'value'),
      State({'type': 'price-input', 'index': ALL}, 'value'),
      State({'type': 'quantity-input', 'index': ALL}, 'value'),
@@ -1298,13 +1321,13 @@ def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strate
      State('total-cost-display', 'children')],
     prevent_initial_call=True
 )
-def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_lots, ids, cost_displays, odd_price_list, total_cost_display):
+def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, order_type_value, trade_toggles, prices, quantities, odd_lots, ids, cost_displays, odd_price_list, total_cost_display):
     """顯示確認對話框（直接用 cost-display 與 total-cost-display）"""
     if n_clicks == 0 or not selected_group or not prices or not quantities or not odd_lots:
         return {'display': 'none'}, ''
 
     action = "BUY" if buy_sell else "SELL"
-    order_type = "SPEED" if True else "MARKET"
+    order_type = "SPEED" if order_type_value else "MARKET"
 
     order_details = []
     # 檢查是否使用平均投資策略
@@ -1403,7 +1426,6 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
 
         action = "買進" if buy_sell else "賣出"
         orders = []
-        order_results = []
 
         # 檢查是否使用平均投資策略
         if funding_strategy:
@@ -1412,18 +1434,23 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
             else:
                 orders.append(f"使用平均投資策略")
 
+        # 追蹤每支股票的狀態
+        stock_status_map = {}
+
         # 只處理 Trade Toggle 為 True 的股票
         for i, (price, quantity, odd_lot_price, odd_lot, stock_id) in enumerate(zip(prices, quantities, odd_price, odd_lots, ids)):
             if (i < len(trade_toggles) and trade_toggles[i]):
                 stock_no = stock_id['index']
                 order_direction = "BUY" if buy_sell else "SELL"
-                
+                price_type = "SPEED" if order_type else "MARKET"
+                stock_messages = []
+                has_errors = False
+
                 # 處理整股下單
                 if quantity is not None and quantity > 0:
                     try:
                         # 根據 order_type 切換下單方式
-                        price_type = "SPEED" if order_type else "MARKET"
-                        result = esun_send_onder(
+                        success, message = esun_send_onder(
                             stock_id=stock_no,
                             order_dir=order_direction,
                             price_type=price_type,
@@ -1432,20 +1459,25 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                             is_oddlot="LOT"
                         )
                         order_str = f"{action}整股 {stock_no}，價格：${price:,.2f}，張數：{quantity}"
-                        orders.append(order_str)
-                        order_results.append(result)
+                        if success:
+                            stock_messages.append(f"✅ 整股下單成功")
+                            orders.append(f"✅ {order_str}")
+                        else:
+                            stock_messages.append(f"❌ 整股下單失敗: {message}")
+                            orders.append(f"❌ {order_str} - {message}")
+                            has_errors = True
                         time.sleep(0.5)  # 避免頻繁下單
                     except Exception as e:
-                        return {'display': 'none'}, f"整股下單失敗 {stock_no}: {str(e)}", status_messages, status_styles
+                        stock_messages.append(f"❌ 整股下單異常: {str(e)}")
+                        orders.append(f"❌ {order_str} - {str(e)}")
+                        has_errors = True
 
                 # 處理零股下單
                 if odd_lot is not None and odd_lot > 0:
                     try:
                         # 如果沒有零股價格，使用整股價格
                         odd_price_to_use = odd_lot_price if odd_lot_price and odd_lot_price > 0 else price
-                        # 根據 order_type 切換下單方式
-                        price_type = "SPEED" if order_type else "MARKET"
-                        result = esun_send_onder(
+                        success, message = esun_send_onder(
                             stock_id=stock_no,
                             order_dir=order_direction,
                             price_type=price_type,
@@ -1454,40 +1486,42 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                             is_oddlot="ODDLOT"
                         )
                         order_str = f"{action}零股 {stock_no}，價格：${odd_price_to_use:,.2f}，股數：{odd_lot}"
-                        orders.append(order_str)
-                        order_results.append(result)
+                        if success:
+                            stock_messages.append(f"✅ 零股下單成功")
+                            orders.append(f"✅ {order_str}")
+                        else:
+                            stock_messages.append(f"❌ 零股下單失敗: {message}")
+                            orders.append(f"❌ {order_str} - {message}")
+                            has_errors = True
                         time.sleep(0.5)  # 避免頻繁下單
                     except Exception as e:
-                        return {'display': 'none'}, f"零股下單失敗 {stock_no}: {str(e)}", status_messages, status_styles
+                        stock_messages.append(f"❌ 零股下單異常: {str(e)}")
+                        orders.append(f"❌ {order_str} - {str(e)}")
+                        has_errors = True
+
+                # 更新這支股票的狀態
+                if len(stock_messages) > 0:
+                    combined_message = "\n".join(stock_messages)
+                    style = {'color': 'red' if has_errors else 'green', 'width': '20%', 'display': 'inline-block'}
+                    stock_status_map[stock_no] = (combined_message, style)
 
         if not orders:
             return {'display': 'none'}, "請填寫完整的下單資訊！", status_messages, status_styles
-
-        # 準備狀態顯示
-        status_messages = ["Not ordered"] * len(ids)
-        status_styles = [{'width': '20%', 'display': 'inline-block'}] * len(ids)
         
-        # 更新每個股票的狀態
-        stock_status_map = {}
-        for i, (stock_id, result) in enumerate(zip(ids, order_results)):
-            if result is not None:
-                status = "✅ 下單成功"
-                style = {'color': 'green', 'width': '20%', 'display': 'inline-block'}
-            else:
-                status = "❌ 下單失敗"
-                style = {'color': 'red', 'width': '20%', 'display': 'inline-block'}
-            stock_status_map[stock_id['index']] = (status, style)
-        
-        # 設置狀態顯示
+        # 設置每支股票的狀態顯示
         for i, stock_id in enumerate(ids):
-            if stock_id['index'] in stock_status_map:
-                status_messages[i] = stock_status_map[stock_id['index']][0]
-                status_styles[i] = stock_status_map[stock_id['index']][1]
+            current_stock = stock_id['index']
+            if current_stock in stock_status_map:
+                status_messages[i] = stock_status_map[current_stock][0]
+                status_styles[i] = stock_status_map[current_stock][1]
 
-        # 檢查所有訂單結果
-        all_success = all(result is not None for result in order_results)
-        status = "✅ 下單成功！" if all_success else "⚠️ 部分下單成功"
-        return {'display': 'none'}, f"{status}\n" + "\n".join(orders), status_messages, status_styles
+        # 檢查是否所有訂單都成功
+        has_any_error = any("❌" in order for order in orders)
+        status = "⚠️ 部分下單失敗" if has_any_error else "✅ 所有訂單下單成功！"
+        
+        # 組合最終訊息
+        final_message = f"{status}" + "\n".join(orders)
+        return {'display': 'none'}, final_message, status_messages, status_styles
 
     return {'display': 'none'}, '', status_messages, status_styles
 
@@ -1514,6 +1548,22 @@ def refresh_transaction_list(n_clicks):
 
         transaction_rows = []
         for trans in transactions:
+            # 計算可取消股數
+            cancel_shares = trans['org_qty_share'] - trans['mat_qty_share'] #都成交完成了 case
+            done_cancel_shares = trans['org_qty_share'] - trans['cel_qty_share'] #完整取消所有股數 case
+            can_not_cancel = (cancel_shares == 0 or done_cancel_shares == 0)
+            
+            # 設定按鈕樣式
+            button_style = {
+                'backgroundColor': '#dc3545' if not can_not_cancel else '#6c757d',  # 紅色或灰色
+                'color': 'white',
+                'border': 'none',
+                'borderRadius': '3px',
+                'cursor': 'pointer' if not can_not_cancel else 'not-allowed',
+                'fontSize': '12px',
+                'opacity': '1' if not can_not_cancel else '0.65'
+            }
+            
             transaction_rows.append(
                 html.Div([
                     html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '10.0%', 'display': 'inline-block'}),
@@ -1529,14 +1579,8 @@ def refresh_transaction_list(n_clicks):
                         html.Button("取消", 
                                   id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
                                   n_clicks=0,
-                                  style={
-                                      'backgroundColor': '#dc3545',
-                                      'color': 'white',
-                                      'border': 'none',
-                                      'borderRadius': '3px',
-                                      'cursor': 'pointer',
-                                      'fontSize': '12px'
-                                  }),
+                                  disabled=can_not_cancel,  # 如果不能取消則禁用按鈕
+                                  style=button_style),
                         style={'width': '10.0%', 'display': 'inline-block'}
                     ),
                 ], style={'marginBottom': '5px', 'borderBottom': '1px solid #ddd'})
@@ -1734,25 +1778,32 @@ def cancel_specific_order(n_clicks_list):
 def update_inventory_list(n_clicks):
     """更新庫存列表"""
     if not g_login_success:
-        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center', 'padding': '10px'})
+        return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center'})
 
     try:
-        from test_esun_api import trade_sdk
-        inventory_data = trade_sdk.get_inventories()
-        
-        if not inventory_data:
-            return html.Div("無庫存資料", style={'textAlign': 'center', 'padding': '10px'})
             
-        from test_esun_api import format_inventory_data
-        formatted_data = format_inventory_data(inventory_data)
+        from test_esun_api import esun_format_inventory_data
+        formatted_data = esun_format_inventory_data()
+
+        if formatted_data == []:
+            return html.Div("無庫存資料", style={'textAlign': 'center'})
         
         # 創建列表項目
         inventory_items = []
+        total_unrealized_pl = 0
+        total_cost = 0
+        total_market_value = 0
+        
         for item in formatted_data:
             # 計算顏色 (紅色表示獲利，綠色表示虧損)
             profit_rate_value = float(item['profit_rate'])
             color = 'red' if profit_rate_value > 0 else 'green'
             
+            # 加總成本 與 未實現盈虧
+            total_market_value += float(item['market_value'])
+            total_cost += float(item['total_cost'])
+            total_unrealized_pl += float(item['unrealized_pl'])
+
             inventory_items.append(html.Div([
                 html.Div(item['trade_type'], style={'width': '12.5%', 'display': 'inline-block'}),
                 html.Div(item['symbol'], style={'width': '12.5%', 'display': 'inline-block'}),
@@ -1763,12 +1814,41 @@ def update_inventory_list(n_clicks):
                 html.Div(f"{item['unrealized_pl']}", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
                 html.Div(f"{item['profit_rate']}%", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
             ], style={'borderBottom': '1px solid #ddd'}))
-            
+        
+        # 計算總盈虧率
+        total_cost = abs(total_cost)
+
+        if total_cost > 0:
+            total_profit_rate = (total_unrealized_pl / total_cost) * 100
+        else:
+            total_profit_rate = 0
+        # print(f"Total Investment: {total_investment}, Total Unrealized PL: {total_unrealized_pl}, Total Cost: {total_cost}")    
+
+        # 設定總計列的顏色
+        total_color = 'red' if total_unrealized_pl > 0 else 'green'
+        
+        # 添加總計列
+        total_row = html.Div([
+            html.Div("總計", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
+            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
+            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
+            html.Div(f"總市值: ${total_market_value:,.0f}", 
+                    style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div(f"總成本: ${total_cost:,.0f}", 
+                    style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div(f"${total_unrealized_pl:,.0f}", 
+                    style={'width': '12.5%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
+            html.Div(f"{total_profit_rate:.2f}%", 
+                    style={'width': '12.5%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
+        ], style={'backgroundColor': '#f8f9fa', 'padding': '10px 0'})
+        
+        inventory_items.append(total_row)
         return html.Div(inventory_items)
         
     except Exception as e:
         return html.Div(f"更新庫存資料時發生錯誤: {str(e)}", 
-                       style={'color': 'red', 'textAlign': 'center', 'padding': '10px'})
+                       style={'color': 'red', 'textAlign': 'center'})
 
 if __name__ == '__main__':
     app.run(debug=True)
