@@ -827,7 +827,7 @@ def update_treemap(n, size_mode, enable_notifications):
         fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
-            margin=dict(t=5, l=10, r=10, b=10),
+            margin=dict(t=20, l=10, r=10, b=10),
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
@@ -846,16 +846,33 @@ def update_treemap(n, size_mode, enable_notifications):
             y='mean_change',  # Y 軸顯示漲幅
             size='total_market_value',
             color='mean_change',
+            range_color=[-10, 10],
+            color_continuous_midpoint=0,
             color_continuous_scale='RdYlGn_r',
             title='',
             labels={'mean_change': 'Mean Change (%)', 'total_market_value': 'Total Market Value'},
             hover_name='category',
-            size_max=60
+            size_max=60,
+            text='mean_change'  # 改為顯示漲跌幅
         )
+        
+        # 設定文字顯示格式
+        fig.update_traces(
+            textposition='top center',
+            texttemplate='%{text:.2f}',  # 只顯示漲跌幅，加上百分比符號
+            textfont=dict(
+                size=10,
+                color='black'
+            )
+        )
+        
+        # 更新布局，設定 Y 軸範圍
+        max_abs_change = max(abs(bubble_data['mean_change'].min()), abs(bubble_data['mean_change'].max()))
+        y_range = [-max_abs_change * 1.2, max_abs_change * 1.2]
 
         fig.update_layout(
             xaxis=dict(title='Category', categoryorder='array', categoryarray=bubble_data['category']),  # X 軸按排序顯示
-            yaxis=dict(title='Mean Change (%)'),
+            yaxis=dict(title='Mean Change (%)', range=y_range),
             paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(t=50, l=10, r=10, b=10),
             height=900,
@@ -872,29 +889,45 @@ def update_treemap(n, size_mode, enable_notifications):
 @app.callback(
     [Output('stock-link-container', 'children'),
      Output('group-dropdown', 'value')],
-    Input('live-treemap', 'clickData')
+    [Input('live-treemap', 'clickData'),
+     Input('size-mode', 'value')]
 )
-def display_stock_link(clickData):
+def display_stock_link(clickData, size_mode):
+    """整合處理 treemap 和 bubble chart 的點擊事件"""
     if not clickData or not clickData['points']:
         return '', None
     
     point = clickData['points'][0]
-    label = point['label']  # 獲取點擊的標籤
-    
-    # 檢查是否是類股群組名稱
     selected_category = None
-    if label in g_stock_category:
-        selected_category = label
-        # 取得該族群所有的股票
-        stocks = g_category_json['台股'][label]
+    
+    # 取得類別名稱 (bubble chart 用 x，treemap 用 label)
+    category = point.get('x') if size_mode == 'bubble' else point.get('label')
+    
+    # 處理最上層的 "Taiwan Stock" 點擊
+    if category == "Taiwan Stock":
+        links_div = html.Div([
+            html.A("Goodinfo", href="https://goodinfo.tw/tw/index.asp", target="_blank", 
+                   style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
+            html.A("Wantgoo", href="https://www.wantgoo.com/stock", target="_blank", 
+                   style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
+            html.A("TradingView - TWSE", href="https://tw.tradingview.com/chart/?symbol=TWSE%3AIX0001",  target="_blank", 
+                   style={'fontSize': '18px', 'color': 'black', 'marginRight': '20px'}),
+            html.A("TradingView - TPEx", href="https://tw.tradingview.com/chart/?symbol=TPEX%3AIX0118", target="_blank", 
+                   style={'fontSize': '18px', 'color': 'black'})
+        ], style={'textAlign': 'center', 'marginTop': '10px'})
+        return links_div, '上市大盤'
+    
+    # 處理類股群組點擊
+    if category in g_stock_category:
+        selected_category = category
+        stocks = g_category_json['台股'][category]
         links = []
-        # 為每個股票生成連結
+        
         for stock_id in stocks:
-            # 從 initial_stocks_df 獲取股票類型
             stock_type = initial_stocks_df.loc['stock_type', stock_id]
             prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
             
-            # 生成各個網站的連結
+            # 生成各網站連結
             url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
             url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
             url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
@@ -909,33 +942,34 @@ def display_stock_link(clickData):
                 html.Br()
             ])
         
-        links_div = html.Div(links, style={'textAlign': 'center', 'marginTop': '10px', 'maxHeight': '200px', 'overflowY': 'auto'})
+        links_div = html.Div(links, style={'textAlign': 'center', 'marginTop': '10px', 
+                                         'maxHeight': '200px', 'overflowY': 'auto'})
         return links_div, selected_category
-
-    # 如果點擊的是最外圍的 "Taiwan Stock"，顯示三個指定的連結
-    if label == "Taiwan Stock":
-        links_div = html.Div([
-            html.A("Goodinfo", href="https://goodinfo.tw/tw/index.asp", target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
-            html.A("Wantgoo", href="https://www.wantgoo.com/stock", target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
-            html.A("TradingView - TWSE", href="https://tw.tradingview.com/chart/?symbol=TWSE%3AIX0001", target="_blank", style={'fontSize': '18px', 'color': 'black', 'marginRight': '20px'}),
-            html.A("TradingView - TPEx", href="https://tw.tradingview.com/chart/?symbol=TPEX%3AIX0118", target="_blank", style={'fontSize': '18px', 'color': 'black'})
-        ], style={'textAlign': 'center', 'marginTop': '10px'})
-        return links_div, None
-
-    # 如果點擊的是其他股票，顯示該股票的連結
-    stock_id = point['customdata'][1]
-    stock_type = point['customdata'][4]
-    prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
-    url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
-    url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
-    url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
     
-    links_div = html.Div([
-        html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
-        html.A(f"Wantgoo - {stock_id}", href=url_wantgoo, target="_blank", style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
-        html.A(f"TradingView - {stock_id}", href=url_tradingView, target="_blank", style={'fontSize': '18px', 'color': 'black'})
-    ], style={'textAlign': 'center', 'marginTop': '10px'})
-    return links_div, selected_category
+    # 處理個股點擊 (只在 treemap 模式有效)
+    if size_mode != 'bubble':
+        try:
+            stock_id = point['customdata'][1]
+            stock_type = point['customdata'][4]
+            prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
+            
+            url_goodinfo = f"https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID={stock_id}"
+            url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
+            url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
+            
+            links_div = html.Div([
+                html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", 
+                       style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
+                html.A(f"Wantgoo - {stock_id}", href=url_wantgoo, target="_blank", 
+                       style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
+                html.A(f"TradingView - {stock_id}", href=url_tradingView, target="_blank", 
+                       style={'fontSize': '18px', 'color': 'black'})
+            ], style={'textAlign': 'center', 'marginTop': '10px'})
+            return links_div, selected_category
+        except:
+            pass
+    
+    return '', None
 
 
 @app.callback(
