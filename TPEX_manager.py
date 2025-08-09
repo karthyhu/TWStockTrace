@@ -105,6 +105,14 @@ class TPEX_manager:
           return int(value)
         except ValueError:
           return 0
+      
+    def calculate_range(self, today_closing_price, change):
+        yes_closing_price = today_closing_price - change
+        if yes_closing_price != 0:
+            range =  (today_closing_price - yes_closing_price) / yes_closing_price * 100
+        else:
+            range = 0.0
+        return range
 
     def gan_url(self, date: str, type: str = 'AL') -> str:
         # print(f"正在生成 URL，日期: {date}, 類型: {type}")
@@ -124,10 +132,10 @@ class TPEX_manager:
         # 計算漲幅
         closeprice = self.safe_float(item[self.fill_list.index('ClosingPrice')])
         change = self.safe_float(item[self.fill_list.index('Change')])
-        range_percent = (change / closeprice * 100) if closeprice != 0 else 0.0
+        range_percent = self.calculate_range(closeprice, change)
         
         # 添加漲幅到項目末尾
-        item.append(str(round(range_percent, 3)))
+        item.append(str(round(range_percent, 5)))
 
         return item
 
@@ -305,6 +313,6 @@ if __name__ == "__main__":
     # daily_trace('114/07/17')
     t = TPEX_manager()
     # t.download_get_loop('114/07/14')
-    # t.download_get_once('114/07/15')
+    t.download_get_once('114/08/08')
     # t.genpassdayfile('114/08/05', 2)
 

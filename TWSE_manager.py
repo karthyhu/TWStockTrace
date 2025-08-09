@@ -38,7 +38,15 @@ class TWSE_manager:
             return int(value.replace(",", "") if isinstance(value, str) else value)
         except (ValueError, AttributeError):
             return 0
-
+        
+    def calculate_range(self, today_closing_price, change):
+        yes_closing_price = today_closing_price - change
+        if yes_closing_price != 0:
+            range =  (today_closing_price - yes_closing_price) / yes_closing_price * 100
+        else:
+            range = 0.0
+        return range
+    
     def download_internalurl(self, date=None):
 
         if date:
@@ -56,8 +64,7 @@ class TWSE_manager:
             return None
 
         jdata = r.json()
-        realdate = str(jdata["params"]["date"])
-        realdate = f"{int(realdate[:4])-1911}{realdate[4:]}"  # 修正日期格式
+        realdate = tn.normalize_date(str(jdata["params"]["date"]), "ROC", "")
         jdata = jdata["tables"][8]
         total_data = {"date": realdate, "fields": self.fill_list.copy(), "data": {}}
 
@@ -80,23 +87,22 @@ class TWSE_manager:
         for item in jdata["data"]:
             ClosingPrice = self.safe_float(item[8].replace(",", ""))
             Change = self.safe_float(item[10])
-            if "+" in item[9]:
-                Change = abs(Change)
+            if "-" in item[9]:
+                Change = -1 * abs(Change)
             else:
-                Change = -abs(Change)
+                Change = abs(Change)
 
-            range_percent = (Change / ClosingPrice * 100) if ClosingPrice != 0 else 0.0
             total_data["data"][item[0]] = [
                 str(item[0]),  # Code
                 str(item[1]),  # Name
                 str(self.safe_float(item[8].replace(",", ""))),  # ClosingPrice
-                str(self.safe_float(item[10].replace(",", ""))),  # Change
+                str(Change),  # Change
                 str(self.safe_float(item[5].replace(",", ""))),  # OpeningPrice
                 str(self.safe_float(item[6].replace(",", ""))),  # HighestPrice
                 str(self.safe_float(item[7].replace(",", ""))),  # LowestPrice
                 str(self.safe_int(item[2].replace(",", ""))),  # TradeVolume
                 str(self.safe_int(item[4].replace(",", ""))),  # TradeValue
-                str(round(range_percent, 5)),  # Range
+                str(round(self.calculate_range(ClosingPrice, Change), 5)),  # Range
             ]
         self.save_file(total_data, filename=f"{realdate}.json")
         
@@ -122,7 +128,7 @@ class TWSE_manager:
             return None
 
         total_data = {
-            "date": datas[0]["Date"],
+            "date": tn.normalize_date(datas[0]["Date"], "ROC", ""),
             "fields": self.fill_list.copy(),
             "data": {},
         }
@@ -131,13 +137,7 @@ class TWSE_manager:
             # 使用安全轉換和正確的漲跌幅計算
             closing_price = self.safe_float(item.get("ClosingPrice", "0"))
             change = self.safe_float(item.get("Change", "0"))
-
-            range_percent = (
-                (change / closing_price * 100) if closing_price != 0 else 0.0
-            )
-
-            # print(f"處理股票 {item.get('Code', 'N/A')} - 漲跌幅: {range_percent:.2f}%")
-
+            
             total_data["data"][item.get("Code", "")] = [
                 str(item.get("Code", "")),
                 str(item.get("Name", "")),
@@ -148,7 +148,7 @@ class TWSE_manager:
                 str(self.safe_float(item.get("LowestPrice", ""))),
                 str(self.safe_int(item.get("TradeVolume", ""))),
                 str(self.safe_int(item.get("TradeValue", ""))),
-                str(round(range_percent, 5))
+                str(round(self.calculate_range(closing_price, change), 5))
             ]
 
         self.save_file(total_data, filename=f"{total_data['date']}.json")
@@ -203,6 +203,6 @@ if __name__ == "__main__":
     print("測試台股資料下載...")
     t = TWSE_manager()
     # date = t.download_openapi()
-    # date = t.download_internalurl("1140724")
+    date = t.download_internalurl("1140808")
     # t.genpassdayfile('114/08/05', 2)
 
