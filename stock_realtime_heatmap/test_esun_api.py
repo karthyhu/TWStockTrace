@@ -254,6 +254,8 @@ def esun_format_inventory_data():
                 '9': 'DayTrading',
                 'A': 'DayTradingSell'
             }.get(item['trade'], 'Unknown'),
+            'stock_id': item['stk_no'],
+            'stock_name': item['stk_na'],
             'symbol': f"{item['stk_no']} {item['stk_na']}",
             'remaining_shares': item['qty_l'],
             'current_price': item['price_mkt'],
@@ -300,8 +302,8 @@ if __name__ == '__main__':
     print("\n格式化後的庫存資料:")
     pprint(formatted_inventories)
 
-    limits = esun_get_trade_limits()
-    if limits:
-        print(f"交易額度: {limits['trade_limit']}")
-        print(f"融資額度: {limits['margin_limit']}")
-        print(f"融券額度: {limits['short_limit']}")
+    # limits = esun_get_trade_limits()
+    # if limits:
+    #     print(f"交易額度: {limits['trade_limit']}")
+    #     print(f"融資額度: {limits['margin_limit']}")
+    #     print(f"融券額度: {limits['short_limit']}")

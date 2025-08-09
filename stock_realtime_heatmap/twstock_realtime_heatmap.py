@@ -6,43 +6,37 @@ import plotly.express as px
 import pandas as pd
 import json
 import twstock
-import datetime
+from datetime import datetime
 import requests
 import os
 import time
 import plotly.io as pio
-from linebot.v3.messaging import MessagingApi
-from linebot.v3.messaging.models import TextMessage, PushMessageRequest
 import dash_daq as daq
-from test_esun_api import esun_login_with_auth, esun_get_stock_price, esun_send_onder
+from test_esun_api import *  # 導入所有 API 函數
 from pprint import pprint
 
 # Global variables
+g_const_debug_print = True
+
 g_notified_status = {}
 g_last_notification_time = {}
 g_stock_category = []
 g_category_json = {}
+g_past_json_data_twse = {}
+g_past_json_data_tpex = {}
+g_company_json_data_twse = {}
+g_company_json_data_tpex = {}
 g_track_stock_realtime_data = {}
 g_login_success = False # 登入狀態 flag
 
-def send_line_message_v3(message, channel_access_token, user_id):
-    """使用 Line Messaging API v3 發送訊息"""
-    try:
-        messaging_api = MessagingApi(channel_access_token)
-        text_message = TextMessage(text=message)
-        push_message_request = PushMessageRequest(to=user_id, messages=[text_message])
-        messaging_api.push_message(push_message_request)
-        print("Line message sent successfully!")
-    except Exception as e:
-        print(f"Failed to send Line message: {e}")
         
 def send_discord_category_notification(treemap_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
-    global g_notified_status, g_last_notification_time
+    global g_notified_status, g_last_notification_time, g_const_debug_print
     
     COOLDOWN_SECONDS = 60  # 1分鐘冷卻
     BUFFER_THRESHOLD = 0.8  # 緩衝區 0.8%
-    print(f"[DEBUG] Current time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[DEBUG] Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     try:
         webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
@@ -55,7 +49,7 @@ def send_discord_category_notification(treemap_df, fig):
         category_stats = category_stats.sort_values('mean', ascending=False)
         # print("Category stats calculated:", category_stats)
         
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         current_timestamp = time.time()
         
         embed = {
@@ -95,12 +89,14 @@ def send_discord_category_notification(treemap_df, fig):
             
             # 緩衝區檢查
             if abs(mean - previous_mean) < BUFFER_THRESHOLD:
-                print(f"{color_code}[DEBUG] Not significant change {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
+                if g_const_debug_print:
+                    print(f"{color_code}[DEBUG] Not significant change {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
                 continue
 
             # 判斷是否需要通知
             if -3.5 < mean < 3.5:
-                print(f"{color_code}[DEBUG] Neutral category {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
+                if g_const_debug_print:
+                    print(f"{color_code}[DEBUG] Neutral category {cat}: mean={mean} , last_mean={previous_mean}\033[0m")
                 # g_notified_status[cat] = {"status": "neutral", "last_mean": mean} -> 不要加，會導致緩衝區無法在界線即時通報
                 continue
 
@@ -120,7 +116,8 @@ def send_discord_category_notification(treemap_df, fig):
             else:
                 current_status = "neutral"
 
-            print(f"{color_code}[DEBUG] Notification check {cat}: mean={mean} , {previous_mean} , status={current_status}\033[0m")
+            if g_const_debug_print:
+                print(f"{color_code}[DEBUG] Notification check {cat}: mean={mean} , {previous_mean} , status={current_status}\033[0m")
 
             # 僅在狀態變化時通知
             if current_status != previous_status:
@@ -167,11 +164,6 @@ def send_discord_category_notification(treemap_df, fig):
                     print(f"Failed to send Discord heatmap image. Status code: {resp.status_code}, Response: {resp.text}")
             else:
                 print(f"Failed to send Discord notification. Status code: {resp.status_code}, Response: {resp.text}")
-                
-            # if text:
-            #     send_line_message_v3(f"📊 台股產業類股漲跌幅通知\n{text}", channel_access_token, user_id)
-            # else:
-            #     print("No text message to send.")
                 
     except Exception as e:
         print(f"Error sending Discord notification: {e}")
@@ -411,18 +403,19 @@ def load_initial_data():
     past_day_json_path_tpex = '../raw_stock_data/daily/tpex/T1_Day.json'
     company_data_json_path_twse = './comp_data/t187ap03_L.json'
     company_data_json_path_tpex = './comp_data/mopsfin_t187ap03_O.json'
+    
+    global g_category_json, g_past_json_data_twse, g_past_json_data_tpex, g_company_json_data_twse, g_company_json_data_tpex
 
     with open(analysis_json_path, 'r', encoding='utf-8') as f:
-        global g_category_json
         g_category_json = json.load(f)
     with open(past_day_json_path_twse, 'r', encoding='utf-8') as f:
-        past_json_data_twse = json.load(f)
+        g_past_json_data_twse = json.load(f)
     with open(past_day_json_path_tpex, 'r', encoding='utf-8') as f:
-        past_json_data_tpex = json.load(f)
+        g_past_json_data_tpex = json.load(f)
     with open(company_data_json_path_twse, 'r', encoding='utf-8') as f:
-        company_json_data_twse = json.load(f)
+        g_company_json_data_twse = json.load(f)
     with open(company_data_json_path_tpex, 'r', encoding='utf-8') as f:
-        company_json_data_tpex = json.load(f)
+        g_company_json_data_tpex = json.load(f)
 
     global g_stock_category
     g_stock_category = list(g_category_json['台股'].keys())  # 提取所有類別名稱
@@ -433,7 +426,7 @@ def load_initial_data():
     for category, stocks_info in g_category_json['台股'].items():
         for stock_id, stock_info in stocks_info.items():
             
-            last_stock_info = get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_twse, company_json_data_tpex, stock_id)
+            last_stock_info = get_stock_info(g_past_json_data_twse, g_past_json_data_tpex, g_company_json_data_twse, g_company_json_data_tpex, stock_id)
 
             if last_stock_info != None:
                 if last_stock_info['last_close_price'] == "":
@@ -489,7 +482,9 @@ def update_realtime_data(stocks_df):
                     if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
                         current_price = float(realtime_data['best_bid_price'][0]) # 最佳買價一檔
                         if current_price == 0:
-                            current_price = float(realtime_data['best_bid_price'][1])
+                            current_price = float(realtime_data['best_ask_price'][0]) # 最佳賣價一檔
+                            if current_price == 0:
+                                current_price = float(realtime_data['best_bid_price'][1]) # 最佳買價二檔
                     else:
                         current_price = float(realtime_data['latest_trade_price'])
                 except (ValueError, IndexError, TypeError) as e:
@@ -505,7 +500,8 @@ def update_realtime_data(stocks_df):
     return stocks_df
 
 # 載入初始股票資料
-initial_stocks_df = load_initial_data()
+global g_initial_stocks_df  # 明確宣告為全域變數
+g_initial_stocks_df = load_initial_data()
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
@@ -720,8 +716,19 @@ app.layout = html.Div([
         # Inventory List Button
         html.Div([
             html.Button("Refresh", id='inventory-refresh-button', n_clicks=0,
-                       style={'backgroundColor': '#2863a7', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'})
-        ], style={'marginTop': '10px', 'textAlign': 'center'})
+                       style={'backgroundColor': '#2863a7', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'}),
+            html.Button("Add Category", id='add-category-button', n_clicks=0,
+                       style={'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer'})
+        ], style={'marginTop': '10px', 'textAlign': 'center'}),
+        html.Div(id='add-category-status', style={
+            'textAlign': 'center',
+            'marginTop': '20px',
+            'padding': '10px',
+            'whiteSpace': 'pre-line',  # 允許換行
+            'wordBreak': 'break-word',  # 確保長文字會換行
+            'maxWidth': '800px',        # 限制最大寬度
+            'margin': '20px auto',       # 水平置中
+        })
     ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'})
 
 ])
@@ -749,7 +756,6 @@ def handle_login(n_clicks, auth_code, password):
     if result:
         g_login_success = True
         # 取得交易額度資訊
-        from test_esun_api import esun_get_trade_limits
         limits = esun_get_trade_limits()
         # 組合顯示訊息
         return html.Div([
@@ -777,13 +783,20 @@ def handle_login(n_clicks, auth_code, password):
 )
 def update_treemap(n, size_mode, enable_notifications):
     
-    updated_stocks_df = update_realtime_data(initial_stocks_df.copy()) # 更新即時股價
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
-    
+    updated_stocks_df = update_realtime_data(g_initial_stocks_df.copy()) # 更新即時股價
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
+
     # 準備 treemap 資料
     treemap_data = []
     df_transposed = updated_stocks_df.T
 
+    # # 設定 pandas 顯示選項，確保完整顯示
+    # with pd.option_context('display.max_rows', None, 
+    #                       'display.max_columns', None,
+    #                       'display.width', None,
+    #                       'display.max_colwidth', None):
+    #     print(df_transposed.to_string())
+    
     for stock_id, row in df_transposed.iterrows():
         # 計算市值
         market_value = row['issue_shares'] * row['realtime_price'] if not pd.isna(row['realtime_price']) else 0
@@ -946,7 +959,7 @@ def display_stock_link(clickData, size_mode):
         links = []
         
         for stock_id in stocks:
-            stock_type = initial_stocks_df.loc['stock_type', stock_id]
+            stock_type = g_initial_stocks_df.loc['stock_type', stock_id]
             prefix = 'TWSE' if stock_type == 'TWSE' else 'TPEX'
             
             # 生成各網站連結
@@ -1605,7 +1618,7 @@ def cancel_all_transactions(n_clicks):
         return html.Div("請先登入", style={'color': 'red', 'textAlign': 'center'})
 
     try:
-        from test_esun_api import esun_cancel_all_order, trade_sdk
+        from test_esun_api import trade_sdk
         
         # 執行取消所有訂單
         all_success, success_orders, cancel_shares = esun_cancel_all_order()
@@ -1701,7 +1714,7 @@ def cancel_specific_order(n_clicks_list):
     ord_no = eval(button_id)['index']  # 取得訂單編號
 
     try:
-        from test_esun_api import esun_cancel_specific_order, trade_sdk
+        from test_esun_api import trade_sdk
         
         # 重新取得最新交易列表
         transactions = trade_sdk.get_order_results()
@@ -1771,6 +1784,87 @@ def cancel_specific_order(n_clicks_list):
         return html.Div(f"取消失敗: {str(e)}", style={'color': 'red', 'textAlign': 'center'})
 
 @app.callback(
+    [Output('add-category-status', 'children'),
+     Output('group-dropdown', 'options')],
+    Input('add-category-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def add_inventory_category(n_clicks):
+    """新增庫存股票到分類"""
+    """1. 要新增到下拉式選單 """
+    """2. 要新增我的"庫存類別"到熱力圖中 """
+
+    global g_category_json, g_stock_category, g_initial_stocks_df
+    global g_past_json_data_twse, g_past_json_data_tpex, g_company_json_data_twse, g_company_json_data_tpex
+
+    dropdown_options = [{'label': category, 'value': category} for category in g_stock_category]
+
+    if not g_login_success:
+        return "請先登入" , dropdown_options
+
+    try:
+
+        inventory_data = esun_format_inventory_data()
+        
+        if not inventory_data:
+            return "無庫存資料可加入" , dropdown_options
+        
+        if "我的庫存" not in g_stock_category:
+            g_stock_category.append("我的庫存")
+
+        if "我的庫存" not in g_category_json['台股']:
+            g_category_json['台股']["我的庫存"] = {}
+            
+            # 收集所有庫存股票
+            for item in inventory_data:
+                stock_id = item['stock_id']
+                stock_name = item['stock_name']
+                
+                g_category_json['台股']["我的庫存"][stock_id] = {
+                    '股票': stock_name
+                }
+
+        # 檢查暫停交易股票
+        remove_suspended_stocks(g_category_json)
+        
+        # 更新 g_initial_stocks_df
+        for stock_id in g_category_json['台股']["我的庫存"].keys():
+            
+            # 如果此股票已經在 g_initial_stocks_df 中，則跳過
+            if stock_id in g_initial_stocks_df.columns:
+                # 如果此股票尚未加入"我的庫存"類別，則加入
+                if "我的庫存" not in g_initial_stocks_df[stock_id]['category']:
+                    g_initial_stocks_df[stock_id]['category'].append("我的庫存")
+                continue
+            
+            # 獲取股票資訊
+            stock_info = get_stock_info(g_past_json_data_twse, g_past_json_data_tpex, 
+                                        g_company_json_data_twse, g_company_json_data_tpex, stock_id)
+
+            if stock_info != None:
+                if stock_info['last_close_price'] == "":
+                    last_stock_price = float('nan')
+                else:
+                    last_stock_price = float(stock_info['last_close_price'])
+
+            g_initial_stocks_df[stock_id] = {
+                'category': ["我的庫存"],
+                'stock_type': stock_info['stock_type'],
+                'stock_name': stock_info['stock_name'],
+                'issue_shares': stock_info['issue_shares'],
+                'last_day_price': last_stock_price,
+                'realtime_price': float('nan'),
+                'realtime_change': float('nan')
+            }
+        # 構建下拉選單選項
+        dropdown_options = [{'label': category, 'value': category} for category in g_stock_category]
+        
+        return "已將庫存股票加入分類", dropdown_options
+        
+    except Exception as e:
+        return f"新增分類時發生錯誤: {str(e)}", dropdown_options
+
+@app.callback(
     Output('inventory-list-container', 'children'),
     Input('inventory-refresh-button', 'n_clicks'),
     prevent_initial_call=True
@@ -1782,7 +1876,6 @@ def update_inventory_list(n_clicks):
 
     try:
             
-        from test_esun_api import esun_format_inventory_data
         formatted_data = esun_format_inventory_data()
 
         if formatted_data == []:
