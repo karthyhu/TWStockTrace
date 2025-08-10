@@ -28,9 +28,9 @@ g_company_json_data_twse = {}
 g_company_json_data_tpex = {}
 g_track_stock_realtime_data = {}
 g_login_success = False # 登入狀態 flag
-
-        
-def send_discord_category_notification(treemap_df, fig):
+g_first_open_momentum_chart = True
+# def get_section_category_momentum_data(range = 14):
+def send_discord_category_notification(display_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
     global g_notified_status, g_last_notification_time, g_const_debug_print
     
@@ -40,12 +40,13 @@ def send_discord_category_notification(treemap_df, fig):
     
     try:
         webhook_url = os.getenv('DISCORD_WEBHOOK_URL')
+        # webhook_url = os.getenv('DISCORD_WEBHOOK_URL_TEST')
         if not webhook_url:
             print("Discord webhook URL not found. Skipping notification.")
             return
     
         # 計算各類別平均漲跌幅與數量
-        category_stats = treemap_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(2)
+        category_stats = display_df.groupby('category')['realtime_change'].agg(['mean', 'count']).round(2)
         category_stats = category_stats.sort_values('mean', ascending=False)
         # print("Category stats calculated:", category_stats)
         
@@ -122,7 +123,7 @@ def send_discord_category_notification(treemap_df, fig):
             # 僅在狀態變化時通知
             if current_status != previous_status:
                 # 收集族群內的股票及漲幅資訊
-                stock_details = treemap_df[treemap_df['category'] == cat][['stock_name', 'stock_type', 'stock_id', 'realtime_change']]
+                stock_details = display_df[display_df['category'] == cat][['stock_name', 'stock_type', 'stock_id', 'realtime_change']]
                 stock_info = []
                 
                 for _, row in stock_details.iterrows():
@@ -348,7 +349,6 @@ def downlod_stock_data():
     else:
         print(f"檔案 '{tpex_file_path}' 已存在，跳過下載。")
 
-
 def remove_suspended_stocks(g_category_json):
     """
     讀取所有股票即時資料，若無 best_bid_price 與 best_ask_price 則判定暫停交易並移除
@@ -388,7 +388,6 @@ def remove_suspended_stocks(g_category_json):
     if removed_stocks:
         print(f"⚠️ 以下股票今日暫停交易，已移除: {removed_stocks}")
 
-    
 # 載入初始資料
 def load_initial_data():
     
@@ -517,9 +516,10 @@ app.layout = html.Div([
             options=[
                 {'label': 'Normal Display', 'value': 'equal'},
                 {'label': 'Market Cap Display', 'value': 'market'},
-                {'label': 'Bubble Chart', 'value': 'bubble'}
+                {'label': 'Bubble Chart', 'value': 'bubble'},
+                {'label': 'Category Momentum', 'value': 'momentum'}
             ],
-            id='size-mode',
+            id='display-mode',
             value='equal',
             labelStyle={'display': 'inline-block', 'marginRight': '10px'},
             style={'display': 'inline-block'}
@@ -544,7 +544,7 @@ app.layout = html.Div([
     ], style={'textAlign': 'center', 'marginBottom': 5}),
     
     # 5. Heatmap or Bubble Chart ----------------------------
-    dcc.Graph(id='live-treemap'),
+    dcc.Graph(id='live-chart'),
     dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
     
     # 6. Stock Link Container ----------------------------
@@ -775,19 +775,19 @@ def handle_login(n_clicks, auth_code, password):
 
 
 @app.callback(
-    [Output('live-treemap', 'figure'),
+    [Output('live-chart', 'figure'),
      Output('last-update-time', 'children')],
     [Input('interval-update', 'n_intervals'),
-     Input('size-mode', 'value'),
+     Input('display-mode', 'value'),
      Input('enable-notifications', 'value')]  # 新增通知開關的輸入
 )
-def update_treemap(n, size_mode, enable_notifications):
+def update_treemap(n, display_mode, enable_notifications):
     
     updated_stocks_df = update_realtime_data(g_initial_stocks_df.copy()) # 更新即時股價
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
 
     # 準備 treemap 資料
-    treemap_data = []
+    display_data = []
     df_transposed = updated_stocks_df.T
 
     # # 設定 pandas 顯示選項，確保完整顯示
@@ -808,7 +808,7 @@ def update_treemap(n, size_mode, enable_notifications):
         
         # 為每個股票的每個類別建立一筆資料
         for category in row['category']:
-            treemap_data.append({
+            display_data.append({
                 'stock_meta': 'Taiwan Stock',
                 'stock_id': stock_id,
                 'stock_name': row['stock_name'],
@@ -822,15 +822,14 @@ def update_treemap(n, size_mode, enable_notifications):
             })
 
     # 轉換成 DataFrame
-    treemap_df = pd.DataFrame(treemap_data)
+    display_df = pd.DataFrame(display_data)
 
     # 根據顯示模式決定區塊大小
-    if size_mode == 'equal' or size_mode == 'market':
-        if size_mode == 'equal':
-            # 平均大小模式，所有區塊大小相同
-            values = [1] * len(treemap_df)
-        elif size_mode == 'market':
-            # 市值大小模式，分 5 區間
+    if display_mode == 'equal' or display_mode == 'market':
+
+        if display_mode == 'equal': # 平均大小模式，所有區塊大小相同
+            values = [1] * len(display_df)
+        elif display_mode == 'market': # 市值大小模式，分 5 區間
             def map_size(mv):
                 # 區間對應大小
                 if mv > 6e11:      # 6000e 以上
@@ -843,11 +842,11 @@ def update_treemap(n, size_mode, enable_notifications):
                     return 2
                 else:              # 100e 以下
                     return 1
-            values = treemap_df['market_value'].apply(map_size).tolist()
+            values = display_df['market_value'].apply(map_size).tolist()
             
         # 建立 treemap
         fig = px.treemap(
-            treemap_df,
+            display_df,
             path=['stock_meta', 'category', 'stock_name'],
             values=values,
             color='realtime_change',
@@ -859,16 +858,22 @@ def update_treemap(n, size_mode, enable_notifications):
             custom_data=['stock_name', 'stock_id', 'realtime_price', 'realtime_change', 'stock_type']
         )
 
-        fig.update_traces(marker=dict(cornerradius=5), textposition='middle center', texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%")
+        fig.update_traces(
+            marker=dict(cornerradius=5),
+            textposition='middle center',
+            texttemplate="%{label} %{customdata[1]}<br>%{customdata[2]}<br>%{customdata[3]:.2f}%"
+        )
+        
         fig.update_layout(
             paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
             margin=dict(t=20, l=10, r=10, b=10),
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
-    else:
+
+    elif display_mode == 'bubble':
         # Bubble Chart 模式，氣泡大小根據市值加總
-        bubble_data = treemap_df.groupby('category').agg(
+        bubble_data = display_df.groupby('category').agg(
             mean_change=('realtime_change', 'mean'),
             total_market_value=('market_value', 'sum')
         ).reset_index()
@@ -895,10 +900,7 @@ def update_treemap(n, size_mode, enable_notifications):
         fig.update_traces(
             textposition='top center',
             texttemplate='%{text:.2f}',  # 只顯示漲跌幅，加上百分比符號
-            textfont=dict(
-                size=10,
-                color='black'
-            )
+            textfont=dict(size=10, color='black')
         )
         
         # 更新布局，設定 Y 軸範圍
@@ -913,10 +915,13 @@ def update_treemap(n, size_mode, enable_notifications):
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
-    
+    elif display_mode == 'momentum':
+        if g_first_open_momentum_chart:
+            g_first_open_momentum_chart = False
+
     #發送 Discord 群組漲跌幅通知
     if enable_notifications:  # 只有在通知開關打開時才發送通知
-        send_discord_category_notification(treemap_df, fig)
+        send_discord_category_notification(display_df, fig)
 
     return fig, current_time
 
@@ -924,10 +929,10 @@ def update_treemap(n, size_mode, enable_notifications):
 @app.callback(
     [Output('stock-link-container', 'children'),
      Output('group-dropdown', 'value')],
-    [Input('live-treemap', 'clickData'),
-     Input('size-mode', 'value')]
+    [Input('live-chart', 'clickData'),
+     Input('display-mode', 'value')]
 )
-def display_stock_link(clickData, size_mode):
+def display_stock_link(clickData, display_mode):
     """整合處理 treemap 和 bubble chart 的點擊事件"""
     if not clickData or not clickData['points']:
         return '', None
@@ -936,7 +941,7 @@ def display_stock_link(clickData, size_mode):
     selected_category = None
     
     # 取得類別名稱 (bubble chart 用 x，treemap 用 label)
-    category = point.get('x') if size_mode == 'bubble' else point.get('label')
+    category = point.get('x') if display_mode == 'bubble' else point.get('label')
     
     # 處理最上層的 "Taiwan Stock" 點擊
     if category == "Taiwan Stock":
@@ -982,7 +987,7 @@ def display_stock_link(clickData, size_mode):
         return links_div, selected_category
     
     # 處理個股點擊 (只在 treemap 模式有效)
-    if size_mode != 'bubble':
+    if display_mode != 'bubble':
         try:
             stock_id = point['customdata'][1]
             stock_type = point['customdata'][4]
