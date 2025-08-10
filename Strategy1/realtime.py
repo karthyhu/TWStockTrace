@@ -5,7 +5,9 @@ import twstock
 import time
 import random
 import requests
+import schedule
 
+base_dir = './Strategy1'
 update_trigger_l = {}
 find.find_Target("1140731")
 data_dir = "./raw_stock_data/daily/twse"
@@ -19,6 +21,12 @@ notify_list = {}
 
 idx = 0
 count = 0
+
+def save_update_trigger_l():
+    print("Saving update_trigger_l to file...")
+    global update_trigger_l
+    with open(f'{base_dir}/update_trigger.json', "w", encoding="utf-8") as f:
+        json.dump(update_trigger_l, f, ensure_ascii=False, indent=1)
 
 
 def notify_discord():
@@ -79,6 +87,18 @@ def update_trigger(code: str, yesvol, nowvol, _5maprice, nowprice):
         notify_list[code] = update_trigger_l[code]
 
 
+def trigger_code_NEW(rdatas: dict):
+    for data in rdatas:
+        if data == "success":
+            continue
+        _5ma_trade_vol = yesterday[data]["5ma_TradeVolume"] / 1000
+        now_acc_trade_vol = float(rdatas[data]["realtime"]["accumulate_trade_volume"]) / 1000
+        now_time = rdatas[data]['info']['time'].split(" ")[1]
+        print(f'now_time = {now_time}')
+
+
+
+
 def trigger_code(rdatas: dict):
     for data in rdatas:
         if data == "success":
@@ -127,20 +147,27 @@ def get_ontime_data():
         print(f"An error occurred while fetching data: {e}")
     if ret and ret.get("success"):  # Check if success is True
         # print("Successfully retrieved data.")
-        trigger_code(ret)
+        trigger_code_NEW(ret)
     else:
         print(f"Failed to retrieve data for list: {this_list}")
         with open("./error.json", "a", encoding="utf-8") as f:
             json.dump(ret, f, ensure_ascii=False, indent=1)
+    with open("./error.json", "a", encoding="utf-8") as f:
+        json.dump(ret, f, ensure_ascii=False, indent=1)
     count += 1
 
     # if(len(notify_list) != 0):
     # notify_discord()
 
+schedule.every(2).seconds.do(get_ontime_data)
+schedule.every(5).minutes.do(save_update_trigger_l)
 
 if __name__ == "__main__":
+    
+    test_count = 0
 
-    # while count < 1:
-    while True:
-        time.sleep(2)
-        get_ontime_data()
+    while test_count < 3:
+    # while True:
+        schedule.run_pending()
+        time.sleep(1)
+        test_count += 1
