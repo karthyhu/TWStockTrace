@@ -29,6 +29,20 @@ g_company_json_data_tpex = {}
 g_track_stock_realtime_data = {}
 g_login_success = False # 登入狀態 flag
 g_first_open_momentum_chart = True
+
+# 函數來獲取股票名稱
+def get_stock_name(stock_no):
+    # 先找 TWSE
+    global g_past_json_data_twse, g_past_json_data_tpex
+
+    if g_past_json_data_twse.get('data', {}).get(stock_no):
+        return g_past_json_data_twse['data'][stock_no][1]
+    # 再找 TPEX
+    elif g_past_json_data_tpex.get('data', {}).get(stock_no):
+        return g_past_json_data_tpex['data'][stock_no][1]
+    else:
+        return stock_no  # 如果找不到名稱，就顯示股票代號
+            
 # def get_section_category_momentum_data(range = 14):
 def send_discord_category_notification(display_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
@@ -729,16 +743,17 @@ app.layout = html.Div([
     html.Div([
         html.H1("Stock Transaction List", style={'textAlign': 'center', 'marginTop': 30}),
         html.Div([
-            html.Div("Order Time", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Stock", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Action", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Order Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Order Quantity(股)", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Cancelled Quantity", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Filled Quantity", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Average Fill Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Order No.", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Cancel", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'})
+            html.Div("Order Time", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Stock", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Action", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Trade Type", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order Price", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order Quantity(股)", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Cancelled Quantity", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Filled Quantity", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Average Fill Price", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Order No.", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Cancel", style={'width': '9.09%', 'display': 'inline-block', 'fontWeight': 'bold'})
         ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
         html.Div(id='transaction-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd'}),
         # Transaction List Buttons
@@ -1639,22 +1654,23 @@ def refresh_transaction_list(n_clicks):
             
             transaction_rows.append(
                 html.Div([
-                    html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['stock_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['buy_sell']}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans.get('od_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['org_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['cel_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['mat_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans.get('avg_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['pre_ord_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['stock_no']} {get_stock_name(trans['stock_no'])}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['buy_sell']}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{esun_get_trade_type_string(trans['trade'])}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('od_price', '-')}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['org_qty_share']}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['cel_qty_share']}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['mat_qty_share']}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans.get('avg_price', '-')}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{trans['pre_ord_no']}", style={'width': '9.09%', 'display': 'inline-block'}),
                     html.Div(
                         html.Button("取消", 
                                   id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
                                   n_clicks=0,
                                   disabled=can_not_cancel,  # 如果不能取消則禁用按鈕
                                   style=button_style),
-                        style={'width': '10.0%', 'display': 'inline-block'}
+                        style={'width': '9.09%', 'display': 'inline-block'}
                     ),
                 ], style={'marginBottom': '5px', 'borderBottom': '1px solid #ddd'})
             )

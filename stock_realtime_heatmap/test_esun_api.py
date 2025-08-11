@@ -278,11 +278,28 @@ def esun_format_inventory_data():
     
     return formatted_data
 
+def esun_get_trade_type_string(trade_type_value):
+    if trade_type_value == '0':
+        return "現股"
+    elif trade_type_value == '3':
+        return "融資"
+    elif trade_type_value == '4':
+        return "融券"
+    elif trade_type_value == '9':
+        return "信用當沖"
+    elif trade_type_value == 'A':
+        return "現股當沖賣"
+    else:
+        return "未知"
+
 if __name__ == '__main__':
     
     # test.0 可以先輸入資訊來測試登入
     esun_login_with_auth('' , '')
-    
+
+    ret = trade_sdk.get_order_results()
+    pprint(ret)
+
     # test.1 撈取股價測試
     # ret = esun_get_stock_price("LOT" , '2010')
     # pprint(ret['asks'])
@@ -306,9 +323,9 @@ if __name__ == '__main__':
     # pprint(inventories)
 
     # 測試格式化函數
-    formatted_inventories = esun_format_inventory_data()
-    print("\n格式化後的庫存資料:")
-    pprint(formatted_inventories)
+    # formatted_inventories = esun_format_inventory_data()
+    # print("\n格式化後的庫存資料:")
+    # pprint(formatted_inventories)
 
     # limits = esun_get_trade_limits()
     # if limits:
