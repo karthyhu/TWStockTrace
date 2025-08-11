@@ -475,26 +475,56 @@ def update_realtime_data(stocks_df):
             if g_track_stock_realtime_data[stock_id]['success']:
                 
                 realtime_data = g_track_stock_realtime_data[stock_id]['realtime']
+                current_price = 0
                 
                 try:
                     #如果沒有最新成交價 就用買價(bid)一檔代替
-                    if realtime_data['latest_trade_price'] == '-' or realtime_data['latest_trade_price'] == '0':
-                        current_price = float(realtime_data['best_bid_price'][0]) # 最佳買價一檔
-                        if current_price == 0:
-                            current_price = float(realtime_data['best_ask_price'][0]) # 最佳賣價一檔
-                            if current_price == 0:
-                                current_price = float(realtime_data['best_bid_price'][1]) # 最佳買價二檔
+                    if realtime_data['latest_trade_price'] in ['-', '0.0000']:
+                        if 'best_bid_price' in realtime_data:
+                            # 確保買價一檔有效
+                            if (realtime_data['best_bid_price'] and 
+                                len(realtime_data['best_bid_price']) > 0 and 
+                                realtime_data['best_bid_price'][0] not in ['-', '0.0000']):
+                                current_price = float(realtime_data['best_bid_price'][0])
+                                #print(f"bid[0] - {stock_id} : {realtime_data['best_bid_price'][0]}")
+                                
+                        # 如果買價無效，嘗試賣價一檔
+                        if current_price == 0 and 'best_ask_price' in realtime_data:
+                            if (realtime_data['best_ask_price'] and 
+                                len(realtime_data['best_ask_price']) > 0 and 
+                                realtime_data['best_ask_price'][0] not in ['-', '0.0000']):
+                                current_price = float(realtime_data['best_ask_price'][0])
+                                #print(f"ask[0] - {stock_id} : {realtime_data['best_ask_price'][0]}")
+                                
+                        # 如果買賣價都無效，使用次優報價
+                        if current_price == 0 and 'best_bid_price' in realtime_data:
+                            if (realtime_data['best_bid_price'] and 
+                                len(realtime_data['best_bid_price']) > 1 and 
+                                realtime_data['best_bid_price'][1] not in ['-', '0.0000']):
+                                current_price = float(realtime_data['best_bid_price'][1])
+                                #print(f"bid[1] - {stock_id} : {realtime_data['best_bid_price'][1]}")
+
                     else:
-                        current_price = float(realtime_data['latest_trade_price'])
+                        if realtime_data['latest_trade_price'] not in ['-', '0.0000']:
+                            current_price = float(realtime_data['latest_trade_price'])
+                            #print(f"latest_trade_price - {stock_id} : {realtime_data['latest_trade_price']}")
+
                 except (ValueError, IndexError, TypeError) as e:
                     print(f"⚠️ stock_id={stock_id} 資料轉換錯誤: {e}")
                     continue
 
-                last_day_price = stocks_df.loc['last_day_price' , stock_id]
-                current_change_percent = round((current_price - last_day_price) / last_day_price * 100 , 2)
-                
-                stocks_df.loc['realtime_price' , stock_id] = current_price
-                stocks_df.loc['realtime_change' , stock_id] = current_change_percent
+                if current_price > 0:  # 只在有有效價格時更新
+                    last_day_price = stocks_df.loc['last_day_price', stock_id]
+                    current_change_percent = round((current_price - last_day_price) / last_day_price * 100, 2)
+                    
+                    stocks_df.loc['realtime_price', stock_id] = current_price
+                    stocks_df.loc['realtime_change', stock_id] = current_change_percent
+                else:
+                    print(f"⚠️ stock_id={stock_id} 無有效價格") 
+            else:
+                print(f"⚠️ stock_id={stock_id} 的 success 為 False")
+        else:
+            print(f"⚠️ stock_id={stock_id} realtime 資料不存在")
     
     return stocks_df
 
