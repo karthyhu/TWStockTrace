@@ -639,14 +639,35 @@ app.layout = html.Div([
         
         # 7-1. Order Type toggle ----------------------------
         html.Div([
-            html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block'}),
+            html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block', 'verticalAlign': 'middle'}),
             daq.ToggleSwitch(id='buy-sell-toggle', value=True, label=['Sell', 'Buy'], 
-                           style={'display': 'inline-block', 'marginRight': '20px'}),
-            daq.ToggleSwitch(id='order_type', value=True, label=['Market Order：', 'Speed Order'], 
-                           style={'display': 'inline-block', 'marginRight': '20px'}),
+                           style={'display': 'inline-block', 'marginRight': '20px', 'verticalAlign': 'middle'}),
+            html.Label("Trade Type：", style={'marginRight': '5px', 'display': 'inline-block', 'verticalAlign': 'middle'}),
+            dcc.Dropdown(
+                id='trade_type',
+                options=[
+                    {'label': '現股', 'value': '現股'},
+                    {'label': '融資', 'value': '融資'},
+                    {'label': '融券', 'value': '融券'},
+                    {'label': '現股當沖賣', 'value': '現股當沖賣'}
+                ],
+                value='現股',
+                style={'display': 'inline-block', 'width': '120px', 'marginRight': '20px', 'verticalAlign': 'middle'}
+            ),
+            html.Label("Order Type：", style={'marginRight': '5px', 'display': 'inline-block', 'verticalAlign': 'middle'}),
+            dcc.Dropdown(
+                id='order_type',
+                options=[
+                    {'label': 'Speed Order', 'value': 'SPEED'},
+                    {'label': 'Market Order', 'value': 'MARKET'},
+                    {'label': 'Limit Order', 'value': 'LIMIT'}
+                ],
+                value='SPEED',
+                style={'display': 'inline-block', 'width': '120px', 'marginRight': '20px', 'verticalAlign': 'middle'}
+            ),
             daq.ToggleSwitch(id='Funding_strategy', value=True, label=['Manual', 'Average'], 
-                           style={'display': 'inline-block', 'marginRight': '10px'}),
-            html.Div(id='average-amount-input', style={'display': 'inline-block'})
+                           style={'display': 'inline-block', 'marginRight': '10px', 'verticalAlign': 'middle'}),
+            html.Div(id='average-amount-input', style={'display': 'inline-block', 'verticalAlign': 'middle'})
         ], style={'textAlign': 'center', 'marginBottom': '20px'}),
         
         # 7-2. Category Dropdown ----------------------------
@@ -1355,6 +1376,7 @@ def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strate
      Output('confirmation-details', 'children')],
     Input('confirm-order-button', 'n_clicks'),
     [State('buy-sell-toggle', 'value'),
+     State('trade_type', 'value'),
      State('Funding_strategy', 'value'),
      State('average-amount', 'value'),
      State('group-dropdown', 'value'),
@@ -1369,13 +1391,13 @@ def update_cost_display(prices, quantities, odd_prices, odd_lots, funding_strate
      State('total-cost-display', 'children')],
     prevent_initial_call=True
 )
-def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount, selected_group, order_type_value, trade_toggles, prices, quantities, odd_lots, ids, cost_displays, odd_price_list, total_cost_display):
+def show_confirmation_modal(n_clicks, buy_sell, trade_type, funding_strategy, average_amount, selected_group, order_type_value, trade_toggles, prices, quantities, odd_lots, ids, cost_displays, odd_price_list, total_cost_display):
     """顯示確認對話框（直接用 cost-display 與 total-cost-display）"""
     if n_clicks == 0 or not selected_group or not prices or not quantities or not odd_lots:
         return {'display': 'none'}, ''
 
     action = "BUY" if buy_sell else "SELL"
-    order_type = "SPEED" if order_type_value else "MARKET"
+    order_type = order_type_value  # 直接使用下拉選單的值
 
     order_details = []
     # 檢查是否使用平均投資策略
@@ -1386,6 +1408,7 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
             order_details.append(html.P(f"💰 投資策略：平均投資", style={'margin': '5px 0', 'fontWeight': 'bold'}))
 
     order_details.append(html.P(f"📊 交易方向：{action}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
+    order_details.append(html.P(f"🔄 交易模式：{trade_type}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
     order_details.append(html.P(f"📋 訂單類型：{order_type}", style={'margin': '5px 0', 'fontWeight': 'bold'}))
     order_details.append(html.Hr())
 
@@ -1435,6 +1458,7 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
     [Input('confirm-final-order', 'n_clicks'),
      Input('cancel-order', 'n_clicks')],
     [State('buy-sell-toggle', 'value'),
+     State('trade_type', 'value'),
      State('Funding_strategy', 'value'),
      State('average-amount', 'value'),
      State('group-dropdown', 'value'),
@@ -1447,7 +1471,7 @@ def show_confirmation_modal(n_clicks, buy_sell, funding_strategy, average_amount
      State('order_type', 'value')],  # 新增 order_type 狀態
     prevent_initial_call=True
 )
-def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_price, odd_lots, ids, order_type):
+def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, trade_type, funding_strategy, average_amount, selected_group, trade_toggles, prices, quantities, odd_price, odd_lots, ids, order_type):
     """處理確認或取消訂單（含零股）"""
     from dash import callback_context
 
@@ -1490,7 +1514,6 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
             if (i < len(trade_toggles) and trade_toggles[i]):
                 stock_no = stock_id['index']
                 order_direction = "BUY" if buy_sell else "SELL"
-                price_type = "SPEED" if order_type else "MARKET"
                 stock_messages = []
                 has_errors = False
 
@@ -1498,13 +1521,14 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                 if quantity is not None and quantity > 0:
                     try:
                         # 根據 order_type 切換下單方式
-                        success, message = esun_send_onder(
+                        success, message = esun_send_order(
                             stock_id=stock_no,
                             order_dir=order_direction,
-                            price_type=price_type,
+                            price_type=order_type,
                             price=price,
                             volume=quantity,
-                            is_oddlot="LOT"
+                            is_oddlot="LOT",
+                            trade_type_str=trade_type
                         )
                         order_str = f"{action}整股 {stock_no}，價格：${price:,.2f}，張數：{quantity}"
                         if success:
@@ -1525,13 +1549,14 @@ def handle_confirmation(confirm_clicks, cancel_clicks, buy_sell, funding_strateg
                     try:
                         # 如果沒有零股價格，使用整股價格
                         odd_price_to_use = odd_lot_price if odd_lot_price and odd_lot_price > 0 else price
-                        success, message = esun_send_onder(
+                        success, message = esun_send_order(
                             stock_id=stock_no,
                             order_dir=order_direction,
-                            price_type=price_type,
+                            price_type=order_type,
                             price=odd_price_to_use,
                             volume=odd_lot,
-                            is_oddlot="ODDLOT"
+                            is_oddlot="ODDLOT",
+                            trade_type_str=trade_type
                         )
                         order_str = f"{action}零股 {stock_no}，價格：${odd_price_to_use:,.2f}，股數：{odd_lot}"
                         if success:

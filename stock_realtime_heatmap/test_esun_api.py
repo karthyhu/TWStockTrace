@@ -60,7 +60,7 @@ def esun_get_stock_price(type , stock_id):
     
     return result
 
-def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, is_DayTradingSell = "NO"):
+def esun_send_order(stock_id, order_dir, price_type, price, volume, is_oddlot, trade_type_str = "現股"):
 
     if stock_id == '':
         print('stock id cant be empty')
@@ -111,10 +111,18 @@ def esun_send_onder(stock_id, order_dir, price_type, price, volume, is_oddlot, i
     current_time = datetime.now()
     time_str = current_time.strftime("%H%M%S")  # 格式：MMSS，例如：1530 (15分30秒)
     
-    if is_DayTradingSell == "YES":
-        send_trade = Trade.DayTradingSell
-    elif is_DayTradingSell == "NO":
+    if trade_type_str == "現股":
+        print('現股')
         send_trade = Trade.Cash
+    elif trade_type_str == "融資":
+        print('融資')
+        send_trade = Trade.Margin
+    elif trade_type_str == "融券":
+        print('融券')
+        send_trade = Trade.Short
+    elif trade_type_str == "現股當沖賣":
+        print('現股當沖賣')
+        send_trade = Trade.DayTradingSell
     else:
         print('Incorrect trade type')
 
