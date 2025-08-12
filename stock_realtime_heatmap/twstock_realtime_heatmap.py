@@ -785,14 +785,17 @@ app.layout = html.Div([
     html.Div([
         html.H1("Stock Inventory List", style={'textAlign': 'center', 'marginTop': 30}),
         html.Div([
-            html.Div("Trade Type", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Symbol", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Remaining Shares", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Current Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Average Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Balance Price", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Unrealized P&L", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("Profit Rate", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'})
+            html.Div("Trade Type", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Symbol", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Remaining Shares", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Current Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Average Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Balance Price", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Market Value", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Value Ratio", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Unrealized P&L", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("Profit Rate", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'})
+
         ], style={'backgroundColor': '#f0f0f0', 'padding': '10px', 'marginBottom': '5px'}),
         html.Div(id='inventory-list-container', style={'maxHeight': '300px', 'overflowY': 'auto', 'border': '1px solid #ddd'}),
         # Inventory List Button
@@ -800,7 +803,9 @@ app.layout = html.Div([
             html.Button("Refresh", id='inventory-refresh-button', n_clicks=0,
                        style={'backgroundColor': '#2863a7', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'}),
             html.Button("Add Category", id='add-category-button', n_clicks=0,
-                       style={'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer'})
+                       style={'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'}),
+            html.Button("Key In", id='key-in-button', n_clicks=0,
+                       style={'backgroundColor': '#ffc107', 'color': 'black', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer'})
         ], style={'marginTop': '10px', 'textAlign': 'center'}),
         html.Div(id='add-category-status', style={
             'textAlign': 'center',
@@ -1979,25 +1984,34 @@ def update_inventory_list(n_clicks):
         total_cost = 0
         total_market_value = 0
         
+        # 先計算總市值以便計算比例
+        for item in formatted_data:
+            total_market_value += float(item['market_value'])
+        
         for item in formatted_data:
             # 計算顏色 (紅色表示獲利，綠色表示虧損)
             profit_rate_value = float(item['profit_rate'])
             color = 'red' if profit_rate_value > 0 else 'green'
             
             # 加總成本 與 未實現盈虧
-            total_market_value += float(item['market_value'])
             total_cost += float(item['total_cost'])
             total_unrealized_pl += float(item['unrealized_pl'])
+            
+            # 計算每支股票占總市值的比例
+            stock_market_value = float(item['market_value'])
+            market_value_ratio = (stock_market_value / total_market_value * 100) if total_market_value > 0 else 0
 
             inventory_items.append(html.Div([
-                html.Div(item['trade_type'], style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(item['symbol'], style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(item['remaining_shares'], style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(f"{item['current_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(f"{item['average_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(f"{item['balance_price']}", style={'width': '12.5%', 'display': 'inline-block'}),
-                html.Div(f"{item['unrealized_pl']}", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
-                html.Div(f"{item['profit_rate']}%", style={'width': '12.5%', 'display': 'inline-block', 'color': color}),
+                html.Div(item['trade_type'], style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(item['symbol'], style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(item['remaining_shares'], style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(f"{item['current_price']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(f"{item['average_price']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(f"{item['balance_price']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(f"${stock_market_value:,.0f}", style={'width': '10.0%', 'display': 'inline-block'}),
+                html.Div(f"{market_value_ratio:.2f}%", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+                html.Div(f"{item['unrealized_pl']}", style={'width': '10.0%', 'display': 'inline-block', 'color': color}),
+                html.Div(f"{item['profit_rate']}%", style={'width': '10.0%', 'display': 'inline-block', 'color': color}),
             ], style={'borderBottom': '1px solid #ddd'}))
         
         # 計算總盈虧率
@@ -2014,18 +2028,16 @@ def update_inventory_list(n_clicks):
         
         # 添加總計列
         total_row = html.Div([
-            html.Div("總計", style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
-            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
-            html.Div("", style={'width': '12.5%', 'display': 'inline-block'}),
-            html.Div(f"總市值: ${total_market_value:,.0f}", 
-                    style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div(f"總成本: ${total_cost:,.0f}", 
-                    style={'width': '12.5%', 'display': 'inline-block', 'fontWeight': 'bold'}),
-            html.Div(f"${total_unrealized_pl:,.0f}", 
-                    style={'width': '12.5%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
-            html.Div(f"{total_profit_rate:.2f}%", 
-                    style={'width': '12.5%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
+            html.Div("總計", style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("", style={'width': '10.0%', 'display': 'inline-block'}),
+            html.Div("", style={'width': '10.0%', 'display': 'inline-block'}),
+            html.Div("", style={'width': '10.0%', 'display': 'inline-block'}),
+            html.Div("", style={'width': '10.0%', 'display': 'inline-block'}),
+            html.Div(f"總成本: ${total_cost:,.0f}",  style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div(f"${total_market_value:,.0f}",  style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold'}),
+            html.Div("100.00%",  style={'width': '10.0%', 'display': 'inline-block', 'fontWeight': 'bold', 'color': 'blue'}),
+            html.Div(f"${total_unrealized_pl:,.0f}",  style={'width': '10.0%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
+            html.Div(f"{total_profit_rate:.2f}%",  style={'width': '10.0%', 'display': 'inline-block', 'color': total_color, 'fontWeight': 'bold'}),
         ], style={'backgroundColor': '#f8f9fa', 'padding': '10px 0'})
         
         inventory_items.append(total_row)
