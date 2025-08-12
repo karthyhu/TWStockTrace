@@ -202,7 +202,7 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
             last_close_price = float(past_json_data_twse['data'][target_code][2])
             if  last_close_price == 0:
                 try:
-                    t2_day_path = '../raw_stock_data/daily/twse/T2_Day.json'
+                    t2_day_path = '../raw_stock_data/daily/twse/T2_Day.json' #注意變更
                     with open(t2_day_path, 'r', encoding='utf-8') as f:
                         t2_day_json = json.load(f)
                     if t2_day_json['data'].get(target_code) is not None:
@@ -231,7 +231,7 @@ def get_stock_info(past_json_data_twse, past_json_data_tpex, company_json_data_t
             last_close_price = float(past_json_data_tpex['data'][target_code][2])
             if  last_close_price == 0:
                 try:
-                    t2_day_path = '../raw_stock_data/daily/tpex/T2_Day.json'
+                    t2_day_path = '../raw_stock_data/daily/tpex/T2_Day.json' #注意變更
                     with open(t2_day_path, 'r', encoding='utf-8') as f:
                         t2_day_json = json.load(f)
                     if t2_day_json['data'].get(target_code) is not None:

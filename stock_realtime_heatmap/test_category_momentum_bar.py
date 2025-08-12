@@ -5,7 +5,8 @@ import os
 import math
 from dash import Dash, html, dcc, Input, Output
 import plotly.offline as pyo
-from test_category_momentum_line import get_unique_stocks, collect_stock_momentum, calculate_category_momentum, get_section_category_momentum_data
+from utility_function import *
+from pprint import pprint
 
 def create_summary_chart(category_momentum):
     """
@@ -285,16 +286,24 @@ if __name__ == '__main__':
         category_data = json.load(f)
 
     # 取得日期檔案列表
-    date_files = get_section_category_momentum_data(10)  # 取得最近10天的資料
-
+    date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex" , 10)  # 取得最近10天的資料
+    pprint(date_files)
+    
     # 取得不重複股票資訊
-    stocks_info = get_unique_stocks()
+    stocks_info = get_unique_stocks(category_data)
 
     # 收集漲幅資訊
-    momentum_data = collect_stock_momentum(date_files, stocks_info)
+    twse_path = "../raw_stock_data/daily/twse"
+    tpex_path = "../raw_stock_data/daily/tpex"
+    momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
 
     # 計算類別平均漲幅
     category_momentum = calculate_category_momentum(category_data, momentum_data)
-
+    # 印出結果
+    # for category, data in category_momentum.items():
+    #     print(f"\n類別: {category} (共 {data['stock_count']} 支股票)")
+    #     print(f"股票: {', '.join(data['stocks'])}")
+    #     print(f"平均漲幅: {[round(x, 2) for x in data['avg_momentum']]}")
+    
     # 繪製柱狀圖
     plot_momentum_bar_subplots(category_momentum, momentum_data['dates'], momentum_data)
