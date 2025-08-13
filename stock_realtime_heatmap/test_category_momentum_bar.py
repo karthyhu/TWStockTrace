@@ -37,8 +37,8 @@ def create_summary_chart(category_momentum):
             y=avg_values,
             marker_color=colors,
             marker=dict(
-                line=dict(width=0),
-                cornerradius=1
+                line=dict(width=1 , color='rgba(0, 0, 0, 0.8)'),
+                cornerradius=5
             ),
             hovertemplate=
             "類別: %{x}<br>" +
@@ -48,7 +48,7 @@ def create_summary_chart(category_momentum):
     
     fig.update_layout(
         title='各類別總平均比較',
-        xaxis_title='類別',
+        # xaxis_title='類別',
         yaxis_title='平均漲幅 (%)',
         template='plotly_white',
         height=800,  # 調整為與右側圖表相同的高度
@@ -173,7 +173,7 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
                     marker_color=market_colors,
                     marker=dict(
                         line=dict(width=1, color='rgba(255, 165, 0, 0.8)'),
-                        cornerradius=1
+                        cornerradius=2
                     ),
                     showlegend=False,
                     opacity=0.9,
@@ -196,7 +196,7 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
                 marker_color=colors,
                 marker=dict(
                     line=dict(width=1, color='black'),
-                    cornerradius=1
+                    cornerradius=2
                 ),
                 showlegend=False,
                 customdata=stock_data,
@@ -206,7 +206,7 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
                 "類股平均漲幅: %{y:.2f}%<br>" +
                 # f"類股整體平均: {avg_momentum:.2f}%<br>" +
                 "個股漲幅:<br>%{customdata}<extra></extra>",
-                width=0.6  # 讓主要類別柱狀圖稍微窄一點，這樣可以看到背景的大盤柱狀圖
+                width=0.5  # 讓主要類別柱狀圖稍微窄一點，這樣可以看到背景的大盤柱狀圖
             ),
             row=row,
             col=col
@@ -235,14 +235,9 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
     
     return fig
 
-def create_dashboard_app(category_momentum, dates, momentum_data):
+def create_dashboard_app():
     """
     創建 Dash 應用程式，包含左右分區的儀表板
-    
-    Args:
-        category_momentum (dict): calculate_category_momentum 函式的輸出結果
-        dates (list): 日期列表
-        momentum_data (dict): collect_stock_momentum 函式的輸出結果
     """
     app = Dash(__name__)
     
@@ -255,8 +250,71 @@ def create_dashboard_app(category_momentum, dates, momentum_data):
         {'label': '5x5 (25個圖)', 'value': '5x5'}
     ]
     
+    # 初始載入資料
+    with open('my_stock_category.json', 'r', encoding='utf-8') as f:
+        category_data = json.load(f)
+    
+    # 初始參數
+    initial_days = 15
+    date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex", initial_days)
+    stocks_info = get_unique_stocks(category_data)
+    
+    twse_path = "../raw_stock_data/daily/twse"
+    tpex_path = "../raw_stock_data/daily/tpex"
+    momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
+    category_momentum = calculate_category_momentum(category_data, momentum_data)
+    
     app.layout = html.Div([
-        html.H1('股票類別動量分析儀表板', style={'textAlign': 'center', 'marginBottom': 30}),
+        html.H1('股票類別動量分析儀表板', style={'textAlign': 'center', 'marginBottom': 20}),
+        
+        # 全域控制面板
+        html.Div([
+            html.Div([
+                html.Label('天數選擇 (幾根柱狀圖):', style={
+                    'fontWeight': 'bold', 
+                    'display': 'inline-block', 
+                    'marginBottom': 5,
+                    'marginRight': 10,
+                    'verticalAlign': 'middle'
+                }),
+                dcc.Input(
+                    id='days-input',
+                    type='number',
+                    value=15,
+                    min=1,
+                    max=50,
+                    step=1,
+                    style={
+                        'width': 80,
+                        'display': 'inline-block',
+                        'verticalAlign': 'middle',
+                        'marginRight': 10
+                    }
+                ),
+                html.Button(
+                    '更新資料',
+                    id='update-button',
+                    n_clicks=0,
+                    style={
+                        'display': 'inline-block',
+                        'verticalAlign': 'middle',
+                        'marginRight': 20,
+                        'backgroundColor': '#007bff',
+                        'color': 'white',
+                        'border': 'none',
+                        'padding': '5px 15px',
+                        'borderRadius': '3px',
+                        'cursor': 'pointer'
+                    }
+                ),
+                html.Span(id='status-message', style={
+                    'color': 'green',
+                    'fontWeight': 'bold',
+                    'display': 'inline-block',
+                    'verticalAlign': 'middle'
+                })
+            ], style={'textAlign': 'center', 'marginBottom': 20})
+        ]),
         
         html.Div([
             # 左側區域 - 總平均比較圖
@@ -322,15 +380,66 @@ def create_dashboard_app(category_momentum, dates, momentum_data):
         ])
     ], style={'padding': 20})
     
+    # 動態更新資料的回調
+    @app.callback(
+        Output('summary-chart', 'figure'),
+        Output('status-message', 'children'),
+        Input('update-button', 'n_clicks'),
+        Input('days-input', 'value')
+    )
+    def update_data(n_clicks, days):
+        if n_clicks == 0:
+            # 初始載入
+            return create_summary_chart(category_momentum), ""
+        
+        if days is None or days < 1:
+            return create_summary_chart(category_momentum), "請輸入有效的天數 (≥1)"
+        
+        try:
+            # 重新載入資料
+            with open('my_stock_category.json', 'r', encoding='utf-8') as f:
+                category_data = json.load(f)
+            
+            date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex", days)
+            stocks_info = get_unique_stocks(category_data)
+            
+            twse_path = "../raw_stock_data/daily/twse"
+            tpex_path = "../raw_stock_data/daily/tpex"
+            new_momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
+            new_category_momentum = calculate_category_momentum(category_data, new_momentum_data)
+            
+            # 更新全域變數 (用於其他回調函數)
+            app.server.config['current_category_momentum'] = new_category_momentum
+            app.server.config['current_momentum_data'] = new_momentum_data
+            app.server.config['current_dates'] = new_momentum_data['dates']
+            
+            # 檢查實際取得的天數
+            actual_days = len(new_momentum_data['dates'])
+            status_msg = f"資料已更新 (要求: {days} 天, 實際: {actual_days} 天)"
+            
+            return create_summary_chart(new_category_momentum), status_msg
+            
+        except Exception as e:
+            return create_summary_chart(category_momentum), f"更新失敗: {str(e)}"
+    
+    # 初始化全域變數
+    app.server.config['current_category_momentum'] = category_momentum
+    app.server.config['current_momentum_data'] = momentum_data
+    app.server.config['current_dates'] = momentum_data['dates']
     # 動態更新頁數選項和標籤的回調
     @app.callback(
         Output('page-dropdown', 'options'),
         Output('page-dropdown', 'value'),
         Output('page-label', 'children'),
         Output('page-dropdown', 'style'),
-        Input('grid-size-dropdown', 'value')
+        Input('grid-size-dropdown', 'value'),
+        Input('update-button', 'n_clicks'),
+        Input('days-input', 'value')  # 新增天數輸入作為觸發條件
     )
-    def update_page_options(grid_size):
+    def update_page_options(grid_size, n_clicks, days):
+        # 從全域變數取得當前的類別動量資料
+        current_category_momentum = app.server.config.get('current_category_momentum', category_momentum)
+        
         # 計算當前網格大小下的每頁項目數
         grid_configs = {
             "1x1": 1,
@@ -340,13 +449,13 @@ def create_dashboard_app(category_momentum, dates, momentum_data):
             "5x5": 25
         }
         items_per_page = grid_configs.get(grid_size, 16)
-        total_categories = len(category_momentum)
+        total_categories = len(current_category_momentum)
         
         if grid_size == "1x1":
             # 1x1 模式：顯示群組名稱
             # 取得所有類別並依照平均漲幅排序
             category_avg_momentum = []
-            for category, data in category_momentum.items():
+            for category, data in current_category_momentum.items():
                 avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
                 category_avg_momentum.append((category, avg_momentum))
             
@@ -362,7 +471,7 @@ def create_dashboard_app(category_momentum, dates, momentum_data):
                 'width': 200,
                 'display': 'inline-block',
                 'verticalAlign': 'middle',
-                'fontSize': '14px'
+                'fontSize': '12px'
             }
         else:
             # 其他模式：顯示頁數
@@ -382,50 +491,28 @@ def create_dashboard_app(category_momentum, dates, momentum_data):
     @app.callback(
         Output('category-subplots', 'figure'),
         Input('page-dropdown', 'value'),
-        Input('grid-size-dropdown', 'value')
+        Input('grid-size-dropdown', 'value'),
+        Input('update-button', 'n_clicks'),
+        Input('days-input', 'value')  # 新增天數輸入作為觸發條件
     )
-    def update_subplots(selected_page, grid_size):
-        return create_category_subplots(category_momentum, dates, momentum_data, page=selected_page, grid_size=grid_size)
+    def update_subplots(selected_page, grid_size, n_clicks, days):
+        # 從全域變數取得當前資料
+        current_category_momentum = app.server.config.get('current_category_momentum', category_momentum)
+        current_momentum_data = app.server.config.get('current_momentum_data', momentum_data)
+        current_dates = app.server.config.get('current_dates', momentum_data['dates'])
+        
+        return create_category_subplots(current_category_momentum, current_dates, current_momentum_data, page=selected_page, grid_size=grid_size)
     
     return app
 
-def plot_momentum_bar_subplots(category_momentum, dates, momentum_data):
+def plot_momentum_bar_subplots():
     """
     使用新的儀表板方式呈現各類別漲幅
-    
-    Args:
-        category_momentum (dict): calculate_category_momentum 函式的輸出結果
-        dates (list): 日期列表
-        momentum_data (dict): collect_stock_momentum 函式的輸出結果
     """
     # 創建並運行 Dash 應用程式
-    app = create_dashboard_app(category_momentum, dates, momentum_data)
+    app = create_dashboard_app()
     app.run(debug=True, port=8050)
 
 if __name__ == '__main__':
-    # 讀取原始分類資料
-    with open('my_stock_category.json', 'r', encoding='utf-8') as f:
-        category_data = json.load(f)
-
-    # 取得日期檔案列表
-    date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex" , 15)  # 取得最近10天的資料
-    pprint(date_files)
-    
-    # 取得不重複股票資訊
-    stocks_info = get_unique_stocks(category_data)
-
-    # 收集漲幅資訊
-    twse_path = "../raw_stock_data/daily/twse"
-    tpex_path = "../raw_stock_data/daily/tpex"
-    momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
-
-    # 計算類別平均漲幅
-    category_momentum = calculate_category_momentum(category_data, momentum_data)
-    # 印出結果
-    # for category, data in category_momentum.items():
-    #     print(f"\n類別: {category} (共 {data['stock_count']} 支股票)")
-    #     print(f"股票: {', '.join(data['stocks'])}")
-    #     print(f"平均漲幅: {[round(x, 2) for x in data['avg_momentum']]}")
-    
-    # 繪製柱狀圖
-    plot_momentum_bar_subplots(category_momentum, momentum_data['dates'], momentum_data)
+    # 直接啟動儀表板，資料會在應用程式內部載入
+    plot_momentum_bar_subplots()
