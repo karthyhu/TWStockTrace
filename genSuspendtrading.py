@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 
 dir = 'raw_stock_data'
 url = "https://tw.stock.yahoo.com/_td-stock/api/resource/StockServices.symbolCalendars;date={date}T00%3A00%3A00%2B08%3A00-{date}T00%3A00%3A00%2B08%3A00;daysAfter=1;eventType=suspendTransaction;includedFields=pagination;limit=200;offset=0;selectedDate={date}"
+url_t = "https://tw.stock.yahoo.com/_td-stock/api/resource/StockServices.symbolCalendars;date={sdate}T00%3A00%3A00%2B08%3A00-{edate}T00%3A00%3A00%2B08%3A00;daysAfter={during};includedFields=pagination;limit=200;offset=0;selectedDate={sdate}"
 detail_url = "https://tw.stock.yahoo.com/_td-stock/api/resource/StockServices.symbolCalendars;symbol={symbol};"
 
 out = {}
 
 def get_last_trading_day(datas:dict):
-    for data in datas['code']:
+    for data in datas:
         try:
             response = requests.get(detail_url.format(symbol=data))
         except requests.RequestException as e:
@@ -39,30 +40,69 @@ def get_last_trading_day(datas:dict):
         else:
             last_trading_day = None
             
-        datas['code'][data]['last_trading_day'] = tn.normalize_date(last_trading_day, "ROC", "") if last_trading_day else None
+        datas[data]['last_trading_day'] = tn.normalize_date(last_trading_day, "ROC", "") if last_trading_day else None
         print(f"Last trading day for {data}: {last_trading_day}")
     return
 
 
-def get_suspend_trading(date: str):
-    tn.normalize_date(date, "CE", "-")
-    print(f"Fetching suspend trading data for date: {date}")
-    response = requests.get(url.format(date=date))
-    out['date'] = tn.normalize_date(date, "ROC")
-    out['code'] = {}
-    datas = response.json()
-    for data in datas['calendars']:
-        out['code'][data['symbol']] = {'Name': data['symbolName']}
 
-    get_last_trading_day(out)
-
+def get_event(date: str):
+    date = tn.normalize_date(date, "CE", "-")
+    print(f"Fetching event data for date: {date}")
+    sdate = date
+    edate = tn.cal_date(date, 1)
+    try:
+        r = requests.get(url_t.format(sdate=sdate, edate=edate, during=2))
+    except requests.RequestException as e:
+        print(f"❌ Failed to fetch event data for {date}: {e}")
+        return
+    out = {
+        sdate:{},
+        edate:{}
+        
+    }
+    for data in r.json()['calendars']:
+        if data['date'].split("T")[0] == sdate and data['eventTypeName'] == '暫停交易':
+            out[sdate][data['symbol']] = {
+                "symbolName": data['symbolName'],
+                "eventTypeName": data['eventTypeName']
+            }
+        if data['date'].split("T")[0] == edate and data['eventTypeName'] == '除權息':
+            out[edate][data['symbol']] = {
+                "symbolName": data['symbolName'],
+                "eventTypeName": data['eventTypeName'],
+                "detail":{
+                    "stock": data['detail']['stock'],
+                    "cash": data['detail']['cash']
+                }
+            }
+            # print(data)
+    
+    get_last_trading_day(out[sdate])
     with open(f"{dir}/suspend_trading.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
+
+
+# def get_suspend_trading(date: str):
+#     tn.normalize_date(date, "CE", "-")
+#     print(f"Fetching suspend trading data for date: {date}")
+#     response = requests.get(url.format(date=date))
+#     out['date'] = tn.normalize_date(date, "ROC")
+#     out['code'] = {}
+#     datas = response.json()
+#     for data in datas['calendars']:
+#         out['code'][data['symbol']] = {'Name': data['symbolName']}
+
+#     get_last_trading_day(out)
+
+#     with open(f"{dir}/suspend_trading.json", "w", encoding="utf-8") as f:
+#         json.dump(out, f, ensure_ascii=False, indent=1)
 
 if __name__ == "__main__":
     # date = tn.get_current_date("CE", "-")
     date = '2025-08-13'
-    get_suspend_trading(date)
+    # get_suspend_trading(date)
+    get_event(date)
     # Example usage
     # get_suspend_trading("2025-08-06")  # Replace with the desired date
 
