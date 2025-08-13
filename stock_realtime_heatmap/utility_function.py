@@ -68,7 +68,7 @@ def get_section_category_momentum_data(search_path, num=10):
         days_checked += 1
         
         # 避免無限迴圈，設定最大檢查天數
-        if days_checked > 30:  # 設定一個合理的上限
+        if days_checked > num * 2:  # 設定一個動態的上限，最多檢查要求天數的2倍
             break
 
     return file_paths
