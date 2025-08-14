@@ -511,7 +511,7 @@ def plot_momentum_bar_subplots():
     """
     # 創建並運行 Dash 應用程式
     app = create_dashboard_app()
-    app.run(debug=True, port=8050)
+    app.run(debug=True, port=7777)
 
 if __name__ == '__main__':
     # 直接啟動儀表板，資料會在應用程式內部載入
