@@ -14,6 +14,10 @@ import plotly.io as pio
 import dash_daq as daq
 from test_esun_api import *  # 導入所有 API 函數
 from pprint import pprint
+from utility_function import *  # 導入 utility 函數
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import math
 
 # Global variables
 g_const_debug_print = True
@@ -95,6 +99,494 @@ def get_stock_name(stock_no):
         return stock_no  # 如果找不到名稱，就顯示股票代號
             
 # def get_section_category_momentum_data(range = 14):
+
+def get_sorted_categories(category_momentum):
+    """
+    獲取排序後的類別列表，確保在所有地方使用相同的排序邏輯
+    
+    Args:
+        category_momentum (dict): 類別動量數據
+    
+    Returns:
+        list: 排序後的 (類別名稱, 平均漲幅) 列表
+    """
+    category_avg_momentum = []
+    for category in sorted(category_momentum.keys()):
+        data = category_momentum[category]
+        avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
+        category_avg_momentum.append((category, avg_momentum))
+    
+    # 依照平均漲幅從高到低排序
+    category_avg_momentum.sort(key=lambda x: x[1], reverse=True)
+    return category_avg_momentum
+
+def create_summary_chart(category_momentum):
+    """
+    創建總平均比較圖（左側圖表）
+    
+    Args:
+        category_momentum (dict): calculate_category_momentum 函式的輸出結果
+    
+    Returns:
+        plotly.graph_objects.Figure: 總平均比較圖
+    """
+    # 計算每個類別的平均漲幅並排序
+    category_avg_momentum = []
+    # 使用 sorted() 確保字典迭代順序穩定
+    for category in sorted(category_momentum.keys()):
+        data = category_momentum[category]
+        avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
+        category_avg_momentum.append((category, avg_momentum))
+    
+    # 依照平均漲幅從低到高排序（左邊跌最多，右邊漲最多）
+    category_avg_momentum.sort(key=lambda x: x[1], reverse=False)
+    
+    categories = [data[0] for data in category_avg_momentum]
+    avg_values = [data[1] for data in category_avg_momentum]
+    colors = ['crimson' if val >= 0 else 'green' for val in avg_values]
+    
+    fig = go.Figure(data=[
+        go.Bar(
+            x=categories,
+            y=avg_values,
+            marker_color=colors,
+            marker=dict(
+                line=dict(width=1 , color='rgba(0, 0, 0, 0.8)'),
+                cornerradius=3
+            ),
+            hovertemplate=
+            "類別: %{x}<br>" +
+            "平均漲幅: %{y:.2f}%<extra></extra>"
+        )
+    ])
+    
+    fig.update_layout(
+        title='各類別總平均比較',
+        yaxis_title='平均漲幅 (%)',
+        template='plotly_white',
+        height=800,
+        margin=dict(l=50, r=50, t=80, b=100)
+    )
+    
+    fig.update_xaxes(tickangle=90, tickfont=dict(size=12))
+    fig.update_yaxes(tickfont=dict(size=12))
+    
+    return fig
+
+def create_category_subplots(category_momentum, dates, momentum_data, page=1, grid_size="3x3"):
+    """
+    創建類別子圖表（右側圖表）
+    
+    Args:
+        category_momentum (dict): calculate_category_momentum 函式的輸出結果
+        dates (list): 日期列表
+        momentum_data (dict): collect_stock_momentum 函式的輸出結果
+        page (int): 頁數 (從1開始)
+        grid_size (str): 網格大小 ("2x2", "3x3", "4x4", "5x5")
+    
+    Returns:
+        plotly.graph_objects.Figure: 子圖表
+    """
+    # 計算每個類別的平均漲幅並排序
+    category_avg_momentum = []
+    for category in sorted(category_momentum.keys()):
+        data = category_momentum[category]
+        avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
+        # 建立副本並反轉漲幅列表，使最新的資料在右側
+        data_copy = data.copy()
+        data_copy['avg_momentum'] = data['avg_momentum'][::-1]
+        category_avg_momentum.append((category, avg_momentum, data_copy))
+    
+    # 依照平均漲幅從高到低排序
+    category_avg_momentum.sort(key=lambda x: x[1], reverse=True)
+    
+    # 處理日期格式並反轉順序
+    formatted_dates = []
+    for date in dates[::-1]:
+        date = date.replace('.json', '')
+        mm = date[3:5]
+        dd = date[5:]
+        formatted_dates.append(f"{mm}/{dd}")
+    
+    # 根據網格大小設定行列數和每頁項目數
+    grid_configs = {
+        "1x1": (1, 1, 1),
+        "2x2": (2, 2, 4),
+        "3x3": (3, 3, 9),
+        "4x4": (4, 4, 16),
+        "5x5": (5, 5, 25)
+    }
+    
+    n_rows, n_cols, items_per_page = grid_configs.get(grid_size, (3, 3, 9))
+    
+    # 計算分頁
+    start_idx = (page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    page_categories = category_avg_momentum[start_idx:end_idx]
+    
+    # 創建子圖表標題
+    subplot_titles = []
+    for i in range(items_per_page):
+        if i < len(page_categories):
+            cat = page_categories[i]
+            subplot_titles.append(f"{cat[0]} (平均: {cat[1]:.2f}%)")
+        else:
+            subplot_titles.append("")
+    
+    fig = make_subplots(
+        rows=n_rows,
+        cols=n_cols,
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.15,
+        horizontal_spacing=0.08
+    )
+    
+    # 取得上市大盤的資料用於疊圖
+    market_data = None
+    for cat_name, cat_avg, cat_data in category_avg_momentum:
+        if cat_name == "上市大盤":
+            market_data = cat_data['avg_momentum']
+            break
+    
+    # 為每個類別添加柱狀圖
+    for idx, (category, avg_momentum, data) in enumerate(page_categories):
+        row = idx // n_cols + 1
+        col = idx % n_cols + 1
+        
+        daily_values = data['avg_momentum']
+        colors = ['crimson' if val >= 0 else 'green' for val in daily_values]
+        
+        # 取得該類別中的所有股票和其漲幅
+        stocks_in_category = data['stocks']
+        
+        # 準備每支股票的漲幅資料
+        date_idx = len(dates) - 1  # 從最後一天開始
+        stock_data = []
+        for date in dates[::-1]:  # 反轉日期列表
+            stocks_info = []
+            for stock in stocks_in_category:
+                if stock in momentum_data:
+                    momentum = momentum_data[stock]['momentum_list'][date_idx]
+                    stocks_info.append(f"{stock} {momentum_data[stock]['name']}: {momentum:.2f}%")
+            stock_data.append("<br>".join(stocks_info))
+            date_idx -= 1
+        
+        # 如果不是上市大盤本身，且有上市大盤資料，則先添加透明的上市大盤柱狀圖作為背景
+        if category != "上市大盤" and market_data is not None:
+            market_colors = ['rgba(255, 165, 0, 0.4)' for val in market_data]
+            
+            fig.add_trace(
+                go.Bar(
+                    x=formatted_dates,
+                    y=market_data,
+                    name="上市大盤 (參考)",
+                    marker_color=market_colors,
+                    marker=dict(
+                        line=dict(width=1, color='rgba(255, 165, 0, 0.8)'),
+                        cornerradius=2
+                    ),
+                    showlegend=False,
+                    opacity=0.9,
+                    hovertemplate=
+                    "<b>上市大盤 (參考)</b><br>" +
+                    "日期: %{x}<br>" +
+                    "大盤平均漲幅: %{y:.2f}%<extra></extra>",
+                    width=0.8  # 讓大盤柱狀圖稍微寬一點作為背景
+                ),
+                row=row,
+                col=col
+            )
+        
+        # 添加主要類別的柱狀圖（疊加在大盤之上）
+        fig.add_trace(
+            go.Bar(
+                x=formatted_dates,
+                y=daily_values,
+                name=category,
+                marker_color=colors,
+                marker=dict(
+                    line=dict(width=1, color='black'),
+                    cornerradius=2
+                ),
+                showlegend=False,
+                customdata=stock_data,
+                hovertemplate=
+                f"<b>{category}</b><br>" +
+                "日期: %{x}<br>" +
+                "類股平均漲幅: %{y:.2f}%<br>" +
+                "個股漲幅:<br>%{customdata}<extra></extra>",
+                width=0.5  # 讓主要類別柱狀圖稍微窄一點，這樣可以看到背景的大盤柱狀圖
+            ),
+            row=row,
+            col=col
+        )
+    
+    # 更新Y軸範圍和圖表設定
+    if category_momentum:
+        y_min = min(min(data['avg_momentum']) for data in category_momentum.values())
+        y_max = max(max(data['avg_momentum']) for data in category_momentum.values())
+        
+        for i in range(1, len(page_categories) + 1):
+            row = (i - 1) // n_cols + 1
+            col = (i - 1) % n_cols + 1
+            fig.update_yaxes(range=[y_min - 0.5, y_max + 0.5], row=row, col=col)
+            fig.update_xaxes(showticklabels=True, tickangle=90, tickfont=dict(size=10), row=row, col=col)
+    
+    fig.update_layout(
+        title=f'各類股每日漲幅分布 ({grid_size} 網格，第 {page} 頁)',
+        showlegend=False,
+        height=800,
+        template='plotly_white',
+        margin=dict(l=50, r=50, t=80, b=50),
+        barmode='overlay'  # 設定柱狀圖為疊加模式
+    )
+    
+    return fig
+
+def create_momentum_dashboard(days=15, grid_size="2x2", page=1):
+    """
+    創建 Category Momentum 儀表板，左側顯示總圖表，右側顯示子圖表
+    
+    Args:
+        days (int): 要分析的天數
+        grid_size (str): 網格大小 ("1x1", "2x2", "3x3", "4x4")
+        page (int): 頁數
+    """
+    try:
+        # 獲取數據
+        date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex", days)
+        stocks_info = get_unique_stocks(g_category_json)
+        
+        twse_path = "../raw_stock_data/daily/twse"
+        tpex_path = "../raw_stock_data/daily/tpex"
+        momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
+        category_momentum = calculate_category_momentum(g_category_json, momentum_data)
+        
+        # 根據網格大小決定右側佈局
+        grid_configs = {
+            "1x1": (1, 1),
+            "2x2": (2, 2),
+            "3x3": (3, 3),
+            "4x4": (4, 4)
+        }
+        right_rows, right_cols = grid_configs.get(grid_size, (2, 2))
+        
+        # 創建左右佈局 - 左側1列，右側為網格
+        total_cols = 1 + right_cols  # 左側1列 + 右側網格列數
+        
+        # 創建列寬度 - 左側40%，右側60%平分給網格列
+        column_widths = [0.4] + [0.6/right_cols] * right_cols
+        
+        # 創建子圖標題
+        subplot_titles = ["各類別總平均比較"]
+        
+        # 計算右側要顯示的類別
+        items_per_page = right_rows * right_cols
+        
+        # 使用共用的排序函數獲取排序後的類別
+        category_avg_momentum = get_sorted_categories(category_momentum)
+        
+        # 根據網格模式計算顯示範圍
+        if grid_size == "1x1":
+            # 1x1 模式：page 直接對應群組索引
+            start_idx = page - 1  # page 從1開始，索引從0開始
+            end_idx = start_idx + 1
+        else:
+            # 其他模式：page 對應頁數
+            start_idx = (page - 1) * items_per_page
+            end_idx = start_idx + items_per_page
+        
+        # 為右側每個位置添加標題
+        display_categories = category_avg_momentum[start_idx:end_idx]
+        for i in range(items_per_page):
+            if i < len(display_categories):
+                cat_name, cat_avg = display_categories[i]
+                subplot_titles.append(f"{cat_name} ({cat_avg:.2f}%)")
+            else:
+                subplot_titles.append("")
+        
+        # 創建 specs - 左側佔據所有行，右側為網格
+        specs = []
+        for row in range(right_rows):
+            row_specs = []
+            if row == 0:
+                # 第一行：左側有 rowspan，右側正常
+                row_specs.append({"rowspan": right_rows})
+            else:
+                # 其他行：左側位置為 None（被 rowspan 佔據）
+                row_specs.append(None)
+            
+            # 右側網格位置
+            for col in range(right_cols):
+                row_specs.append({"secondary_y": False})
+            specs.append(row_specs)
+        
+        combined_fig = make_subplots(
+            rows=right_rows,
+            cols=total_cols,
+            column_widths=column_widths,
+            subplot_titles=subplot_titles,
+            horizontal_spacing=0.02,
+            vertical_spacing=0.1,
+            specs=specs
+        )
+        
+        # 添加左側總圖表
+        summary_fig = create_summary_chart(category_momentum)
+        for trace in summary_fig.data:
+            combined_fig.add_trace(trace, row=1, col=1)
+        
+        # 設定左側圖表的軸
+        combined_fig.update_xaxes(
+            tickangle=90, 
+            tickfont=dict(size=8),
+            row=1, col=1
+        )
+        combined_fig.update_yaxes(
+            title="平均漲幅 (%)",
+            tickfont=dict(size=8),
+            row=1, col=1
+        )
+        
+        # 添加右側子圖表
+        # 處理日期格式
+        formatted_dates = []
+        for date in date_files[::-1]:
+            date = date.replace('.json', '')
+            mm = date[3:5]
+            dd = date[5:]
+            formatted_dates.append(f"{mm}/{dd}")
+        
+        # 獲取大盤數據用於疊圖
+        market_data = None
+        for cat_name, cat_avg in category_avg_momentum:
+            if cat_name == "上市大盤":
+                data = category_momentum[cat_name]
+                market_data = data['avg_momentum'][::-1]  # 反轉以配合日期順序
+                break
+        
+        # 為右側每個位置添加圖表
+        for i in range(len(display_categories)):
+            cat_name, cat_avg = display_categories[i]
+            cat_data = category_momentum[cat_name]
+            daily_values = cat_data['avg_momentum'][::-1]  # 反轉以配合日期順序
+            
+            row = i // right_cols + 1
+            col = i % right_cols + 2  # +2 因為第1列是左側圖表
+            
+            # 準備每支股票的漲幅資料
+            stocks_in_category = cat_data['stocks']
+            date_idx = len(date_files) - 1  # 從最後一天開始
+            stock_data = []
+            for date in date_files[::-1]:  # 反轉日期列表
+                stocks_info = []
+                for stock in stocks_in_category:
+                    if stock in momentum_data:
+                        momentum = momentum_data[stock]['momentum_list'][date_idx]
+                        stocks_info.append(f"{stock} {momentum_data[stock]['name']}: {momentum:.2f}%")
+                stock_data.append("<br>".join(stocks_info))
+                date_idx -= 1
+            
+            # 添加大盤背景（如果不是大盤本身）
+            if cat_name != "上市大盤" and market_data is not None:
+                combined_fig.add_trace(
+                    go.Bar(
+                        x=formatted_dates,
+                        y=market_data,
+                        name="上市大盤 (參考)",
+                        marker_color=['rgba(255, 165, 0, 0.4)' for _ in market_data],
+                        marker=dict(
+                            line=dict(width=1, color='rgba(255, 165, 0, 0.8)'),
+                            cornerradius=2
+                        ),
+                        showlegend=False,
+                        opacity=0.9,
+                        hovertemplate=
+                        "<b>上市大盤 (參考)</b><br>" +
+                        "日期: %{x}<br>" +
+                        "大盤平均漲幅: %{y:.2f}%<extra></extra>",
+                        width=0.8
+                    ),
+                    row=row,
+                    col=col
+                )
+            
+            # 添加主要類別的柱狀圖
+            colors = ['crimson' if val >= 0 else 'green' for val in daily_values]
+            combined_fig.add_trace(
+                go.Bar(
+                    x=formatted_dates,
+                    y=daily_values,
+                    name=cat_name,
+                    marker_color=colors,
+                    marker=dict(
+                        line=dict(width=1, color='black'),
+                        cornerradius=2
+                    ),
+                    showlegend=False,
+                    customdata=stock_data,
+                    hovertemplate=
+                    f"<b>{cat_name}</b><br>" +
+                    "日期: %{x}<br>" +
+                    "類股平均漲幅: %{y:.2f}%<br>" +
+                    "個股漲幅:<br>%{customdata}<extra></extra>",
+                    width=0.5
+                ),
+                row=row,
+                col=col
+            )
+            
+            # 更新右側子圖的軸
+            combined_fig.update_xaxes(
+                showticklabels=True, 
+                tickangle=90, 
+                tickfont=dict(size=10),
+                row=row, 
+                col=col
+            )
+            combined_fig.update_yaxes(
+                tickfont=dict(size=10),
+                row=row, 
+                col=col
+            )
+        
+        # 更新整體佈局
+        combined_fig.update_layout(
+            height=850,  # 增加總高度以容納標題
+            template='plotly_white',
+            margin=dict(l=50, r=50, t=50, b=50),  # 增加頂部邊距
+            barmode='overlay'
+        )
+        
+        # 在兩個圖的中間上方添加標題
+        combined_fig.add_annotation(
+            text=f'Category Momentum Dashboard | 天數: {days} (實際: {len(date_files)}) | {grid_size} 網格，第 {page} 頁',
+            xref="paper", yref="paper",
+            x=0.5, y=1.05,  # 將標題位置移到更高，超出圖表範圍
+            showarrow=False,
+            font=dict(size=14, color="black"),  # 稍微縮小字體
+            xanchor="center",
+            yanchor="middle"
+        )
+        
+        return combined_fig, f"資料已更新 (要求: {days} 天, 實際: {len(date_files)} 天)"
+        
+    except Exception as e:
+        # 如果出錯，返回一個空的圖表
+        fig = go.Figure()
+        fig.add_annotation(
+            text=f"Error loading momentum data: {str(e)}",
+            xref="paper", yref="paper",
+            x=0.5, y=0.5, showarrow=False,
+            font=dict(size=16, color="red")
+        )
+        fig.update_layout(
+            title="Category Momentum Dashboard - Error",
+            height=800,
+            template='plotly_white'
+        )
+        return fig, f"更新失敗: {str(e)}"
+
 def send_discord_category_notification(display_df, fig):
     """發送股票群組漲跌幅資訊到 Discord"""
     global g_notified_status, g_last_notification_time, g_const_debug_print
@@ -602,7 +1094,91 @@ app.layout = html.Div([
         html.Span("Last Update Time: ", style={'fontWeight': 'bold'}),
         html.Span(id='last-update-time', style={'color': 'blue'})
     ], style={'textAlign': 'center', 'marginBottom': 5}),
-    
+
+    # Category Momentum 控制面板 ----------------------------
+    html.Div(id='momentum-controls', children=[
+        html.Div([
+            html.Label('天數選擇:', style={
+                'display': 'inline-block', 
+                'marginRight': 10,
+                'verticalAlign': 'middle'
+            }),
+            dcc.Input(
+                id='momentum-days-input',
+                type='number',
+                value=5,
+                min=1,
+                max=30,
+                step=1,
+                style={
+                    'width': 50,
+                    'display': 'inline-block',
+                    'verticalAlign': 'middle',
+                    'marginRight': 20
+                }
+            ),
+            html.Label('網格大小:', style={
+                'display': 'inline-block', 
+                'marginRight': 10,
+                'verticalAlign': 'middle'
+            }),
+            dcc.Dropdown(
+                id='momentum-grid-size',
+                options=[
+                    {'label': '1x1', 'value': '1x1'},
+                    {'label': '2x2', 'value': '2x2'},
+                    {'label': '3x3', 'value': '3x3'},
+                    {'label': '4x4', 'value': '4x4'}
+                ],
+                value='3x3',
+                style={
+                    'width': 100,
+                    'display': 'inline-block',
+                    'verticalAlign': 'middle',
+                    'marginRight': 20
+                }
+            ),
+            html.Label('頁數:', style={
+                    'display': 'inline-block', 
+                    'marginRight': 10,
+                    'verticalAlign': 'middle'
+            }),
+            dcc.Dropdown(
+                id='momentum-page-dropdown',
+                options=[{'label': '第 1 頁', 'value': 1}],
+                value=1,
+                style={
+                    'width': 200,
+                    'display': 'inline-block',
+                    'verticalAlign': 'middle',
+                    'marginRight': 20
+                }
+            ),
+            html.Button(
+                '更新資料',
+                id='momentum-update-button',
+                n_clicks=0,
+                style={
+                    'display': 'inline-block',
+                    'verticalAlign': 'middle',
+                    'backgroundColor': '#007bff',
+                    'color': 'white',
+                    'border': 'none',
+                    'padding': '5px 15px',
+                    'borderRadius': '3px',
+                    'cursor': 'pointer',
+                    'marginRight': 10
+                }
+            ),
+            html.Div(id='momentum-status-message', style={
+                'textAlign': 'center',
+                'color': 'green',
+                'display': 'inline-block',
+            })
+        ], style={'textAlign': 'center', 'marginTop': 20}),
+
+    ], style={'display': 'none', 'marginBottom': 20}),
+
     # 5. Heatmap or Bubble Chart ----------------------------
     dcc.Graph(id='live-chart'),
     dcc.Interval(id='interval-update', interval=5000, n_intervals=0),
@@ -805,7 +1381,7 @@ app.layout = html.Div([
             html.Button("Add Category", id='add-category-button', n_clicks=0,
                        style={'backgroundColor': '#28a745', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer', 'marginRight': '10px'}),
             html.Button("Key In", id='key-in-button', n_clicks=0,
-                       style={'backgroundColor': '#ffc107', 'color': 'black', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer'})
+                       style={'backgroundColor': '#ffc107', 'color': 'white', 'border': 'none', 'padding': '10px 20px', 'borderRadius': '5px', 'cursor': 'pointer'})
         ], style={'marginTop': '10px', 'textAlign': 'center'}),
         html.Div(id='add-category-status', style={
             'textAlign': 'center',
@@ -819,6 +1395,124 @@ app.layout = html.Div([
     ], style={'marginTop': '20px', 'marginBottom': '30px', 'textAlign': 'center'})
 
 ])
+
+# 控制 momentum 控制面板的顯示/隱藏
+@app.callback(
+    Output('momentum-controls', 'style'),
+    Input('display-mode', 'value')
+)
+def toggle_momentum_controls(display_mode):
+    """根據顯示模式來控制 momentum 控制面板的顯示"""
+    if display_mode == 'momentum':
+        return {'display': 'block', 'marginBottom': 20}
+    else:
+        return {'display': 'none', 'marginBottom': 20}
+
+# 動態更新 momentum 頁數選項
+@app.callback(
+    [Output('momentum-page-dropdown', 'options'),
+     Output('momentum-page-dropdown', 'value')],
+    [Input('momentum-grid-size', 'value'),
+     Input('momentum-update-button', 'n_clicks')],
+    State('momentum-days-input', 'value'),  # 添加天數作為 State
+    prevent_initial_call=True
+)
+def update_momentum_page_options(grid_size, n_clicks, days):
+    """根據網格大小更新頁數選項"""
+    try:
+        # 載入分類資料來計算總頁數
+        with open('./my_stock_category.json', 'r', encoding='utf-8') as f:
+            category_data = json.load(f)
+        
+        total_categories = len(category_data.get('台股', {}))
+        
+        # 根據網格大小計算每頁項目數
+        grid_configs = {
+            "1x1": 1,
+            "2x2": 4,
+            "3x3": 9,
+            "4x4": 16
+        }
+        items_per_page = grid_configs.get(grid_size, 4)
+        
+        if grid_size == "1x1":
+            # 1x1 模式：顯示群組名稱，需要取得類別資料並排序
+            try:
+                # 使用與圖表顯示相同的天數
+                actual_days = days if days and days > 0 else 15
+                date_files = get_section_category_momentum_data("../raw_stock_data/daily/tpex", actual_days)
+                stocks_info = get_unique_stocks(category_data)
+                
+                twse_path = "../raw_stock_data/daily/twse"
+                tpex_path = "../raw_stock_data/daily/tpex"
+                momentum_data = collect_stock_momentum(twse_path, tpex_path, date_files, stocks_info)
+                category_momentum = calculate_category_momentum(category_data, momentum_data)
+                
+                # 使用共用的排序函數
+                category_avg_momentum = get_sorted_categories(category_momentum)
+                
+                page_options = [{'label': f"{cat[0]} ({cat[1]:.2f}%)", 'value': i+1} 
+                              for i, cat in enumerate(category_avg_momentum)]
+                
+            except Exception as e:
+                # 如果出錯，使用類別名稱作為備選
+                categories = list(category_data.get('台股', {}).keys())
+                page_options = [{'label': f"{cat}", 'value': i+1} 
+                              for i, cat in enumerate(categories)]
+        else:
+            # 其他模式：顯示頁數
+            total_pages = math.ceil(total_categories / items_per_page)
+            page_options = [{'label': f'第 {i} 頁', 'value': i} for i in range(1, total_pages + 1)]
+        
+        return page_options, 1  # 重置到第1頁或第1個群組
+        
+    except Exception as e:
+        return [{'label': '第 1 頁', 'value': 1}], 1
+
+# 動態更新 momentum 頁數下拉選單的樣式
+@app.callback(
+    Output('momentum-page-dropdown', 'style'),
+    Input('momentum-grid-size', 'value'),
+    prevent_initial_call=True
+)
+def update_momentum_page_dropdown_style(grid_size):
+    """根據網格大小調整下拉選單的樣式"""
+    base_style = {
+        'width': 200,
+        'display': 'inline-block',
+        'verticalAlign': 'middle',
+        'marginRight': 20
+    }
+    
+    if grid_size == "1x1":
+        # 1x1 模式使用較小的字體
+        base_style['fontSize'] = '12px'
+    else:
+        # 其他模式使用正常字體
+        base_style['fontSize'] = '14px'
+    
+    return base_style
+
+# 專門處理 momentum 模式的更新
+@app.callback(
+    [Output('live-chart', 'figure', allow_duplicate=True),
+     Output('momentum-status-message', 'children')],
+    [Input('momentum-update-button', 'n_clicks'),
+     Input('momentum-grid-size', 'value'),
+     Input('momentum-page-dropdown', 'value')],
+    State('momentum-days-input', 'value'),
+    prevent_initial_call=True
+)
+def update_momentum_chart(n_clicks, grid_size, page, days):
+    """更新 momentum 圖表"""
+    if not days or days < 1:
+        return create_momentum_dashboard()[0], "請輸入有效的天數 (≥1)"
+    
+    try:
+        fig, status_msg = create_momentum_dashboard(days=days, grid_size=grid_size, page=page)
+        return fig, status_msg
+    except Exception as e:
+        return create_momentum_dashboard()[0], f"更新失敗: {str(e)}"
 
 # 處理登入功能
 @app.callback(
@@ -866,9 +1560,12 @@ def handle_login(n_clicks, auth_code, password):
      Output('last-update-time', 'children')],
     [Input('interval-update', 'n_intervals'),
      Input('display-mode', 'value'),
-     Input('enable-notifications', 'value')]  # 新增通知開關的輸入
+     Input('enable-notifications', 'value')],  # 新增通知開關的輸入
+    [State('momentum-days-input', 'value'),
+     State('momentum-grid-size', 'value'),
+     State('momentum-page-dropdown', 'value')]  # 新增 momentum 控制面板狀態
 )
-def update_treemap(n, display_mode, enable_notifications):
+def update_treemap(n, display_mode, enable_notifications, momentum_days, momentum_grid_size, momentum_page):
     
     updated_stocks_df = update_realtime_data(g_initial_stocks_df.copy()) # 更新即時股價
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # 取得當前時間
@@ -1003,8 +1700,17 @@ def update_treemap(n, display_mode, enable_notifications):
             coloraxis_colorbar_tickformat='.2f'
         )
     elif display_mode == 'momentum':
+        global g_first_open_momentum_chart
         if g_first_open_momentum_chart:
             g_first_open_momentum_chart = False
+        
+        # 使用當前控制面板的狀態，如果沒有值則使用預設值
+        days = momentum_days if momentum_days and momentum_days > 0 else 5
+        grid_size = momentum_grid_size if momentum_grid_size else "2x2"
+        page = momentum_page if momentum_page and momentum_page > 0 else 1
+        
+        # 創建 Category Momentum 儀表板（使用當前狀態）
+        fig, _ = create_momentum_dashboard(days=days, grid_size=grid_size, page=page)
 
     #發送 Discord 群組漲跌幅通知
     if enable_notifications:  # 只有在通知開關打開時才發送通知
@@ -1059,12 +1765,15 @@ def display_stock_link(clickData, display_mode):
             url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
             url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
             
+            # 獲取股票名稱
+            stock_name = get_stock_name(stock_id)
+            
             links.extend([
-                html.A(f"{stock_id}-GoodInfo", href=url_goodinfo, target="_blank", 
+                html.A(f"GoodInfo - {stock_id} {stock_name}", href=url_goodinfo, target="_blank", 
                        style={'fontSize': '16px', 'color': 'blue', 'margin': '5px 10px'}),
-                html.A(f"{stock_id}-Wantgoo", href=url_wantgoo, target="_blank", 
+                html.A(f"Wantgoo - {stock_id} {stock_name}", href=url_wantgoo, target="_blank", 
                        style={'fontSize': '16px', 'color': 'green', 'margin': '5px 10px'}),
-                html.A(f"{stock_id}-TradingView", href=url_tradingView, target="_blank", 
+                html.A(f"TradingView - {stock_id} {stock_name}", href=url_tradingView, target="_blank", 
                        style={'fontSize': '16px', 'color': 'black', 'margin': '5px 10px'}),
                 html.Br()
             ])
@@ -1084,12 +1793,14 @@ def display_stock_link(clickData, display_mode):
             url_wantgoo = f"https://www.wantgoo.com/stock/{stock_id}/technical-chart"
             url_tradingView = f"https://tw.tradingview.com/chart/?symbol={prefix}%3A{stock_id}"
             
+            stock_name = get_stock_name(stock_id)
+
             links_div = html.Div([
-                html.A(f"Goodinfo - {stock_id}", href=url_goodinfo, target="_blank", 
+                html.A(f"Goodinfo - {stock_id} {stock_name}", href=url_goodinfo, target="_blank", 
                        style={'fontSize': '18px', 'color': 'blue', 'marginRight': '20px'}),
-                html.A(f"Wantgoo - {stock_id}", href=url_wantgoo, target="_blank", 
+                html.A(f"Wantgoo - {stock_id} {stock_name}", href=url_wantgoo, target="_blank", 
                        style={'fontSize': '18px', 'color': 'green', 'marginRight': '20px'}),
-                html.A(f"TradingView - {stock_id}", href=url_tradingView, target="_blank", 
+                html.A(f"TradingView - {stock_id} {stock_name}", href=url_tradingView, target="_blank", 
                        style={'fontSize': '18px', 'color': 'black'})
             ], style={'textAlign': 'center', 'marginTop': '10px'})
             return links_div, selected_category

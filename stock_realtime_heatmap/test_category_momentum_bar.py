@@ -20,7 +20,9 @@ def create_summary_chart(category_momentum):
     """
     # 計算每個類別的平均漲幅並排序
     category_avg_momentum = []
-    for category, data in category_momentum.items():
+    # 使用 sorted() 確保字典迭代順序穩定
+    for category in sorted(category_momentum.keys()):
+        data = category_momentum[category]
         avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
         category_avg_momentum.append((category, avg_momentum))
     
@@ -76,11 +78,14 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
     """
     # 計算每個類別的平均漲幅並排序
     category_avg_momentum = []
-    for category, data in category_momentum.items():
+    # 使用 sorted() 確保字典迭代順序穩定
+    for category in sorted(category_momentum.keys()):
+        data = category_momentum[category]
         avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
-        # 反轉漲幅列表，使最新的資料在右側
-        data['avg_momentum'] = data['avg_momentum'][::-1]
-        category_avg_momentum.append((category, avg_momentum, data))
+        # 建立副本並反轉漲幅列表，使最新的資料在右側（避免原地修改）
+        data_copy = data.copy()
+        data_copy['avg_momentum'] = data['avg_momentum'][::-1]
+        category_avg_momentum.append((category, avg_momentum, data_copy))
     
     # 依照平均漲幅從高到低排序
     category_avg_momentum.sort(key=lambda x: x[1], reverse=True)
@@ -455,7 +460,9 @@ def create_dashboard_app():
             # 1x1 模式：顯示群組名稱
             # 取得所有類別並依照平均漲幅排序
             category_avg_momentum = []
-            for category, data in current_category_momentum.items():
+            # 使用 sorted() 確保字典迭代順序穩定
+            for category in sorted(current_category_momentum.keys()):
+                data = current_category_momentum[category]
                 avg_momentum = sum(data['avg_momentum']) / len(data['avg_momentum'])
                 category_avg_momentum.append((category, avg_momentum))
             
@@ -511,7 +518,7 @@ def plot_momentum_bar_subplots():
     """
     # 創建並運行 Dash 應用程式
     app = create_dashboard_app()
-    app.run(debug=True, port=7777)
+    app.run(debug=True)
 
 if __name__ == '__main__':
     # 直接啟動儀表板，資料會在應用程式內部載入
