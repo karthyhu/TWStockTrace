@@ -1,137 +1,158 @@
 {
- "date": "1140812",
- "code": {
-  "4945.TWO": {
-   "Name": "陞達科技",
-   "last_trading_day": "1140306"
-  },
-  "3321.TW": {
-   "Name": "同泰",
-   "last_trading_day": "1140818"
-  },
-  "3290.TWO": {
-   "Name": "東浦",
-   "last_trading_day": "1140813"
-  },
-  "2327.TW": {
-   "Name": "國巨",
-   "last_trading_day": "1140813"
-  },
+ "2025-08-13": {
   "68061.TWO": {
-   "Name": "森崴能源一",
+   "symbolName": "森崴能源一",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140812"
   },
   "6806.TW": {
-   "Name": "森崴能源",
+   "symbolName": "森崴能源",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140812"
   },
   "62884.TWO": {
-   "Name": "聯嘉四",
+   "symbolName": "聯嘉四",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140804"
   },
   "6288.TW": {
-   "Name": "聯嘉",
+   "symbolName": "聯嘉",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140804"
   },
   "5481.TWO": {
-   "Name": "新華",
+   "symbolName": "新華",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140801"
   },
   "1101B.TW": {
-   "Name": "台泥乙特",
+   "symbolName": "台泥乙特",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140812"
   },
   "11011.TWO": {
-   "Name": "台泥一永",
+   "symbolName": "台泥一永",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140812"
   },
   "1101.TW": {
-   "Name": "台泥",
+   "symbolName": "台泥",
+   "eventTypeName": "暫停交易",
    "last_trading_day": "1140812"
+  }
+ },
+ "2025-08-14": {
+  "9960.TWO": {
+   "symbolName": "邁達康",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.70"
+   }
   },
-  "6418.TWO": {
-   "Name": "詠昇",
-   "last_trading_day": "1140811"
+  "8032.TWO": {
+   "symbolName": "光菱",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.10"
+   }
   },
-  "5314.TWO": {
-   "Name": "世紀*",
-   "last_trading_day": "1140319"
+  "6432.TWO": {
+   "symbolName": "今展科",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.40"
+   }
   },
-  "13166.TWO": {
-   "Name": "上曜六",
-   "last_trading_day": "1140811"
+  "6156.TWO": {
+   "symbolName": "松上",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.00"
+   }
   },
-  "13164.TWO": {
-   "Name": "上曜四",
-   "last_trading_day": "1140811"
+  "5489.TWO": {
+   "symbolName": "彩富",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.82"
+   }
   },
-  "1316.TW": {
-   "Name": "上曜",
-   "last_trading_day": "1140811"
+  "5203.TW": {
+   "symbolName": "訊連",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "3.90"
+   }
   },
-  "8291.TWO": {
-   "Name": "尚茂",
-   "last_trading_day": "1140730"
+  "4148.TW": {
+   "symbolName": "全宇生技-KY",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": "0.50",
+    "cash": null
+   }
   },
-  "020019": {
-   "Name": "統一特選台灣5GN",
-   "last_trading_day": "1140725"
+  "3232.TWO": {
+   "symbolName": "昱捷",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.50"
+   }
   },
-  "020018": {
-   "Name": "統一價值成長30N",
-   "last_trading_day": "1140725"
+  "3162.TWO": {
+   "symbolName": "精確",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.50"
+   }
   },
-  "2888B": {
-   "Name": "新光金乙特",
-   "last_trading_day": "1140711"
+  "3050.TW": {
+   "symbolName": "鈺德",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.50"
+   }
   },
-  "2888A": {
-   "Name": "新光金甲特",
-   "last_trading_day": "1140711"
+  "3008.TW": {
+   "symbolName": "大立光",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "28.00"
+   }
   },
-  "2888": {
-   "Name": "新光金",
-   "last_trading_day": "1140711"
+  "2754.TWO": {
+   "symbolName": "亞洲藏壽司",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.80"
+   }
   },
-  "2317.TW": {
-   "Name": "鴻海",
-   "last_trading_day": "1140729"
+  "2476.TW": {
+   "symbolName": "鉅祥",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "3.50"
+   }
   },
-  "1504.TW": {
-   "Name": "東元",
-   "last_trading_day": "1140729"
-  },
-  "3202": {
-   "Name": "樺晟",
-   "last_trading_day": "1140708"
-  },
-  "89278.TWO": {
-   "Name": "北基八",
-   "last_trading_day": "1140717"
-  },
-  "89277.TWO": {
-   "Name": "北基七",
-   "last_trading_day": "1140717"
-  },
-  "8927.TWO": {
-   "Name": "北基",
-   "last_trading_day": "1140717"
-  },
-  "6919.TW": {
-   "Name": "康霈*",
-   "last_trading_day": "1140711"
-  },
-  "3090.TW": {
-   "Name": "日電貿",
-   "last_trading_day": "1140714"
-  },
-  "3036A.TW": {
-   "Name": "文曄甲特",
-   "last_trading_day": "1120913"
-  },
-  "3036.TW": {
-   "Name": "文曄",
-   "last_trading_day": "1140714"
+  "1580.TWO": {
+   "symbolName": "新麥",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "9.16"
+   }
   }
  }
 }

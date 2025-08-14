@@ -188,3 +188,82 @@ def get_current_date(output_format: str = "CE", separator: str = "") -> str:
     today_str = taiwan_now.strftime("%Y%m%d")
 
     return normalize_date(today_str, output_format, separator)
+
+
+def cal_date(start_date:str, offset_days:int) -> str:
+    """
+    計算新的日期，並確保回傳的日期為工作日（週一至週五）
+
+    Args:
+        start_date: 起始日期字串，格式可為 "YYYY-MM-DD"、"YYYYMMDD" 或民國年格式
+        offset_days: 偏移工作天數（可以是正數或負數）
+
+    Returns:
+        計算後的工作日日期字串，格式與輸入格式相同
+    """
+    # 判斷輸入日期格式
+    input_format = ""
+    separator = ""
+    is_roc = False
+    
+    # 檢查分隔符號
+    if "-" in start_date:
+        separator = "-"
+    elif "/" in start_date:
+        separator = "/"
+    
+    # 標準化日期格式為西元年 YYYY-MM-DD
+    if separator:
+        # 有分隔符號，判斷是否為民國年
+        parts = start_date.split(separator)
+        if len(parts[0]) == 3:  # 民國年 YYY-MM-DD
+            is_roc = True
+            normalized_date = normalize_date(start_date, "CE", "-")
+        else:
+            normalized_date = start_date if separator == "-" else normalize_date(start_date, "CE", "-")
+    else:
+        # 無分隔符號
+        if len(start_date) == 7:  # YYYMMDD 民國年
+            is_roc = True
+            normalized_date = normalize_date(start_date, "CE", "-")
+        else:
+            normalized_date = normalize_date(start_date, "CE", "-")
+    
+    # 記錄原始格式
+    orig_format = "ROC" if is_roc else "CE"
+    orig_separator = separator
+    
+    # 解析標準化後的日期
+    start_dt = datetime.datetime.strptime(normalized_date, "%Y-%m-%d")
+    
+    # 計算工作日偏移
+    days_moved = 0
+    day_increment = 1 if offset_days >= 0 else -1
+    current_dt = start_dt
+    
+    # 處理工作日偏移
+    while abs(days_moved) < abs(offset_days):
+        current_dt += datetime.timedelta(days=day_increment)
+        # 檢查是否為工作日 (週一至週五)
+        if current_dt.weekday() < 5:  # 0-4 代表週一至週五
+            days_moved += day_increment
+    
+    # 如果起始日期是週末，需要調整到下一個工作日（如果是正向偏移）或前一個工作日（如果是負向偏移）
+    if start_dt.weekday() >= 5 and offset_days != 0:
+        if offset_days > 0:
+            # 找到下一個工作日
+            while current_dt.weekday() >= 5:
+                current_dt += datetime.timedelta(days=1)
+        else:
+            # 找到前一個工作日
+            while current_dt.weekday() >= 5:
+                current_dt -= datetime.timedelta(days=1)
+    
+    # 轉回原始格式
+    result_date = current_dt.strftime("%Y-%m-%d")
+    
+    # 如果原始格式是民國年或有不同分隔符號，則轉換回去
+    if orig_format == "ROC" or orig_separator != "-" or not separator:
+        return normalize_date(result_date, orig_format, orig_separator)
+    
+    return result_date
