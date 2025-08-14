@@ -1,15 +1,5 @@
 {
- "2025-08-13": {
-  "68061.TWO": {
-   "symbolName": "森崴能源一",
-   "eventTypeName": "暫停交易",
-   "last_trading_day": "1140812"
-  },
-  "6806.TW": {
-   "symbolName": "森崴能源",
-   "eventTypeName": "暫停交易",
-   "last_trading_day": "1140812"
-  },
+ "2025-08-14": {
   "62884.TWO": {
    "symbolName": "聯嘉四",
    "eventTypeName": "暫停交易",
@@ -24,6 +14,16 @@
    "symbolName": "新華",
    "eventTypeName": "暫停交易",
    "last_trading_day": "1140801"
+  },
+  "3290.TWO": {
+   "symbolName": "東浦",
+   "eventTypeName": "暫停交易",
+   "last_trading_day": "1140813"
+  },
+  "2327.TW": {
+   "symbolName": "國巨",
+   "eventTypeName": "暫停交易",
+   "last_trading_day": "1140813"
   },
   "1101B.TW": {
    "symbolName": "台泥乙特",
@@ -41,117 +41,93 @@
    "last_trading_day": "1140812"
   }
  },
- "2025-08-14": {
-  "9960.TWO": {
-   "symbolName": "邁達康",
+ "2025-08-15": {
+  "9933.TW": {
+   "symbolName": "中鼎",
    "eventTypeName": "除權息",
    "detail": {
-    "stock": null,
-    "cash": "1.70"
-   }
-  },
-  "8032.TWO": {
-   "symbolName": "光菱",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "1.10"
-   }
-  },
-  "6432.TWO": {
-   "symbolName": "今展科",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "1.40"
-   }
-  },
-  "6156.TWO": {
-   "symbolName": "松上",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "1.00"
-   }
-  },
-  "5489.TWO": {
-   "symbolName": "彩富",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "1.82"
-   }
-  },
-  "5203.TW": {
-   "symbolName": "訊連",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "3.90"
-   }
-  },
-  "4148.TW": {
-   "symbolName": "全宇生技-KY",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": "0.50",
+    "stock": "1.00",
     "cash": null
    }
   },
-  "3232.TWO": {
-   "symbolName": "昱捷",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "0.50"
-   }
-  },
-  "3162.TWO": {
-   "symbolName": "精確",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "0.50"
-   }
-  },
-  "3050.TW": {
-   "symbolName": "鈺德",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "0.50"
-   }
-  },
-  "3008.TW": {
-   "symbolName": "大立光",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": null,
-    "cash": "28.00"
-   }
-  },
-  "2754.TWO": {
-   "symbolName": "亞洲藏壽司",
+  "8043.TWO": {
+   "symbolName": "蜜望實",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
     "cash": "0.80"
    }
   },
-  "2476.TW": {
-   "symbolName": "鉅祥",
+  "6117.TW": {
+   "symbolName": "迎廣",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "3.50"
+    "cash": "2.17"
    }
   },
-  "1580.TWO": {
-   "symbolName": "新麥",
+  "5222.TW": {
+   "symbolName": "全訊",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": "1.00",
+    "cash": null
+   }
+  },
+  "3535.TW": {
+   "symbolName": "晶彩科",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "9.16"
+    "cash": "0.50"
+   }
+  },
+  "1615.TW": {
+   "symbolName": "大山",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": "0.50",
+    "cash": null
+   }
+  },
+  "1477.TW": {
+   "symbolName": "聚陽",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "6.00"
+   }
+  },
+  "00980B.TWO": {
+   "symbolName": "台新特選IG債10+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.05"
+   }
+  },
+  "00962.TW": {
+   "symbolName": "台新AI優息動能",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.03"
+   }
+  },
+  "00942B.TWO": {
+   "symbolName": "台新美A公司債20+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.06"
+   }
+  },
+  "00936.TW": {
+   "symbolName": "台新永續高息中小",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.04"
    }
   }
  }

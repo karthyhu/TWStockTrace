@@ -41,7 +41,7 @@ def get_last_trading_day(datas:dict):
             last_trading_day = None
             
         datas[data]['last_trading_day'] = tn.normalize_date(last_trading_day, "ROC", "") if last_trading_day else None
-        print(f"Last trading day for {data}: {last_trading_day}")
+        # print(f"Last trading day for {data}: {last_trading_day}")
     return
 
 

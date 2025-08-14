@@ -2,7 +2,7 @@ name: Daily Python Run and Push
 
 on:
   schedule:
-    - cron: '0 0 * * *'    # 每天 00:00 UTC 執行（台灣時間早上 8:00）
+    - cron: '0 23 * * *'    # 每天 23:00 UTC 執行（台灣時間早上 7:00）
   workflow_dispatch:        # 允許手動觸發
 
 jobs:

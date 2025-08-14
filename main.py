@@ -229,6 +229,6 @@ if __name__ == "__main__":
     print("=" * 50 + "\n")
     
     print("開始更新當日暫停交易資料...")
-    gst.get_suspend_trading(date)
+    gst.get_event(date)
 
     print("Update completed.")
