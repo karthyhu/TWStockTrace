@@ -1,5 +1,5 @@
 {
- "2025-08-14": {
+ "2025-08-15": {
   "62884": {
    "symbolName": "聯嘉四",
    "eventTypeName": "暫停交易",
@@ -13,7 +13,7 @@
   "5481.TWO": {
    "symbolName": "新華",
    "eventTypeName": "暫停交易",
-   "last_trading_day": "1140801"
+   "last_trading_day": "1140804"
   },
   "3290.TWO": {
    "symbolName": "東浦",
@@ -41,93 +41,429 @@
    "last_trading_day": "1140812"
   }
  },
- "2025-08-15": {
-  "9933.TW": {
-   "symbolName": "中鼎",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": "1.00",
-    "cash": null
-   }
-  },
-  "8043.TWO": {
-   "symbolName": "蜜望實",
+ "2025-08-18": {
+  "6799.TW": {
+   "symbolName": "來頡",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "0.80"
+    "cash": "1.99"
    }
   },
-  "6117.TW": {
-   "symbolName": "迎廣",
+  "6509.TWO": {
+   "symbolName": "聚和",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "2.17"
+    "cash": "1.32"
    }
   },
-  "5222.TW": {
-   "symbolName": "全訊",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": "1.00",
-    "cash": null
-   }
-  },
-  "3535.TW": {
-   "symbolName": "晶彩科",
+  "6282.TW": {
+   "symbolName": "康舒",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
     "cash": "0.50"
    }
   },
-  "1615.TW": {
-   "symbolName": "大山",
-   "eventTypeName": "除權息",
-   "detail": {
-    "stock": "0.50",
-    "cash": null
-   }
-  },
-  "1477.TW": {
-   "symbolName": "聚陽",
+  "6188.TWO": {
+   "symbolName": "廣明",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "6.00"
+    "cash": "1.50"
    }
   },
-  "00980B.TWO": {
-   "symbolName": "台新特選IG債10+",
+  "1618.TW": {
+   "symbolName": "合機",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.50"
+   }
+  },
+  "00982B.TWO": {
+   "symbolName": "FT投資級債20+",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
     "cash": "0.05"
    }
   },
-  "00962.TW": {
-   "symbolName": "台新AI優息動能",
+  "00982A.TW": {
+   "symbolName": "主動群益台灣強棒",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
-    "cash": "0.03"
+    "cash": "0.24"
    }
   },
-  "00942B.TWO": {
-   "symbolName": "台新美A公司債20+",
+  "00964.TW": {
+   "symbolName": "中信亞太高股息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.05"
+   }
+  },
+  "00963.TW": {
+   "symbolName": "中信全球高股息",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
     "cash": "0.06"
    }
   },
-  "00936.TW": {
-   "symbolName": "台新永續高息中小",
+  "00961.TW": {
+   "symbolName": "FT臺灣永續高息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.08"
+   }
+  },
+  "00957B.TWO": {
+   "symbolName": "兆豐US優選投等債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.07"
+   }
+  },
+  "00952.TW": {
+   "symbolName": "凱基台灣AI50",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.02"
+   }
+  },
+  "00948B.TWO": {
+   "symbolName": "中信優息投資級債",
    "eventTypeName": "除權息",
    "detail": {
     "stock": null,
     "cash": "0.04"
+   }
+  },
+  "00945B.TW": {
+   "symbolName": "凱基美國非投等債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.08"
+   }
+  },
+  "00944.TW": {
+   "symbolName": "野村趨勢動能高息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.05"
+   }
+  },
+  "00943.TW": {
+   "symbolName": "兆豐電子高息等權",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.06"
+   }
+  },
+  "00938.TW": {
+   "symbolName": "凱基優選30",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.10"
+   }
+  },
+  "00937B.TWO": {
+   "symbolName": "群益ESG投等債20+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.07"
+   }
+  },
+  "00934.TW": {
+   "symbolName": "中信成長高股息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.08"
+   }
+  },
+  "00933B.TWO": {
+   "symbolName": "國泰10Y+金融債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.07"
+   }
+  },
+  "00932.TW": {
+   "symbolName": "兆豐永續高息等權",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.18"
+   }
+  },
+  "00923.TW": {
+   "symbolName": "群益台ESG低碳50",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.92"
+   }
+  },
+  "00913.TW": {
+   "symbolName": "兆豐台灣晶圓製造",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.90"
+   }
+  },
+  "00900.TW": {
+   "symbolName": "富邦特選高股息30",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.10"
+   }
+  },
+  "00894.TW": {
+   "symbolName": "中信小資高價30",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.40"
+   }
+  },
+  "00891.TW": {
+   "symbolName": "中信關鍵半導體",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.41"
+   }
+  },
+  "00890B.TWO": {
+   "symbolName": "凱基ESGBBB債15+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.14"
+   }
+  },
+  "00883B.TWO": {
+   "symbolName": "中信ESG投資級債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.12"
+   }
+  },
+  "00881.TW": {
+   "symbolName": "國泰台灣科技龍頭",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.55"
+   }
+  },
+  "00878.TW": {
+   "symbolName": "國泰永續高股息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.40"
+   }
+  },
+  "00864B.TWO": {
+   "symbolName": "中信美國公債0-1",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.56"
+   }
+  },
+  "00860B.TWO": {
+   "symbolName": "群益1-5Y投資級債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.48"
+   }
+  },
+  "00847B.TWO": {
+   "symbolName": "中信美國市政債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.35"
+   }
+  },
+  "00846B.TWO": {
+   "symbolName": "富邦歐洲銀行債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.44"
+   }
+  },
+  "00845B.TWO": {
+   "symbolName": "富邦新興投等債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.36"
+   }
+  },
+  "00841B.TWO": {
+   "symbolName": "凱基AAA-AA公司債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.35"
+   }
+  },
+  "00840B.TWO": {
+   "symbolName": "凱基IG精選15+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.11"
+   }
+  },
+  "00799B.TWO": {
+   "symbolName": "國泰A級醫療債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.55"
+   }
+  },
+  "00795B.TWO": {
+   "symbolName": "中信美國公債20年",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.36"
+   }
+  },
+  "00780B.TWO": {
+   "symbolName": "國泰A級金融債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.40"
+   }
+  },
+  "00778B.TWO": {
+   "symbolName": "凱基金融債20+",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.14"
+   }
+  },
+  "00777B.TWO": {
+   "symbolName": "凱基AAA至A公司債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.14"
+   }
+  },
+  "00773B.TWO": {
+   "symbolName": "中信優先金融債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.13"
+   }
+  },
+  "00772B.TWO": {
+   "symbolName": "中信高評級公司債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.13"
+   }
+  },
+  "00761B.TWO": {
+   "symbolName": "國泰A級公司債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.43"
+   }
+  },
+  "00756B.TWO": {
+   "symbolName": "群益投等新興公債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.46"
+   }
+  },
+  "00755B.TWO": {
+   "symbolName": "群益投資級公用債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.44"
+   }
+  },
+  "00754B.TWO": {
+   "symbolName": "群益AAA-AA公司債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.42"
+   }
+  },
+  "00741B.TWO": {
+   "symbolName": "富邦全球非投等債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.20"
+   }
+  },
+  "00740B.TWO": {
+   "symbolName": "富邦全球投等債",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.18"
+   }
+  },
+  "00730.TW": {
+   "symbolName": "富邦臺灣優質高息",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.11"
+   }
+  },
+  "00701.TW": {
+   "symbolName": "國泰股利精選30",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "1.80"
+   }
+  },
+  "00690.TW": {
+   "symbolName": "兆豐藍籌30",
+   "eventTypeName": "除權息",
+   "detail": {
+    "stock": null,
+    "cash": "0.75"
    }
   }
  }
