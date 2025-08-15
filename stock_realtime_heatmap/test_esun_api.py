@@ -112,16 +112,16 @@ def esun_send_order(stock_id, order_dir, price_type, price, volume, is_oddlot, t
     time_str = current_time.strftime("%H%M%S")  # 格式：MMSS，例如：1530 (15分30秒)
     
     if trade_type_str == "現股":
-        print('現股')
+        # print('現股')
         send_trade = Trade.Cash
     elif trade_type_str == "融資":
-        print('融資')
+        # print('融資')
         send_trade = Trade.Margin
     elif trade_type_str == "融券":
-        print('融券')
+        # print('融券')
         send_trade = Trade.Short
     elif trade_type_str == "現股當沖賣":
-        print('現股當沖賣')
+        # print('現股當沖賣')
         send_trade = Trade.DayTradingSell
     else:
         print('Incorrect trade type')
@@ -137,6 +137,7 @@ def esun_send_order(stock_id, order_dir, price_type, price, volume, is_oddlot, t
         trade = send_trade,
         user_def = time_str
     )
+    print(f"<{stock_id}> order_info: {order}")
 
     # 送出訂單並獲得回傳結果
     place_order_result = trade_sdk.place_order(order)
@@ -162,10 +163,14 @@ def esun_cancel_specific_order(ord_no):
         # 尋找指定的委託書編號
         target_order = None
         for order in order_list:
-            if order['pre_ord_no'] == ord_no:
+            # 如果 pre_ord_no 為空字串，則使用 ord_no
+            order_no = order['pre_ord_no'] if order['pre_ord_no'] != "" else order['ord_no']
+            if order_no == ord_no:
                 target_order = order
                 break
-        
+        if target_order['celable'] == "2":
+            return False, f"委託書編號 {ord_no} 的訂單目前不可取消"
+
         if target_order is None:
             return False, f"找不到委託書編號 {ord_no} 的訂單"
         
@@ -204,11 +209,11 @@ def esun_cancel_all_order():
     for order in order_list:
         cancel_shares = order['org_qty_share'] - order['mat_qty_share'] #都成交完成了 case
         done_cancel_shares = order['org_qty_share'] - order['cel_qty_share'] #完整取消所有股數 case
-        
-        if cancel_shares == 0 or done_cancel_shares == 0:
+
+        if cancel_shares == 0 or done_cancel_shares == 0 or order['celable'] == "2":
             continue
 
-        order_id = order['pre_ord_no']
+        order_id = order['pre_ord_no'] if order['pre_ord_no'] != "" else order['ord_no']
         print(f"order_id <{order_id}> , stock {order['stock_no']}: cancel number -> {cancel_shares} shares")
         
         cancel_ret = trade_sdk.cancel_order(order)

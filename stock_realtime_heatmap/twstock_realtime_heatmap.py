@@ -164,8 +164,8 @@ def create_summary_chart(category_momentum):
         title='各類別總平均比較',
         yaxis_title='平均漲幅 (%)',
         template='plotly_white',
-        height=800,
-        margin=dict(l=50, r=50, t=80, b=100)
+        margin=dict(t=20, l=10, r=10, b=10),
+        height=900
     )
     
     fig.update_xaxes(tickangle=90, tickfont=dict(size=12))
@@ -335,9 +335,9 @@ def create_category_subplots(category_momentum, dates, momentum_data, page=1, gr
     fig.update_layout(
         title=f'各類股每日漲幅分布 ({grid_size} 網格，第 {page} 頁)',
         showlegend=False,
-        height=800,
         template='plotly_white',
-        margin=dict(l=50, r=50, t=80, b=50),
+        margin=dict(t=20, l=10, r=10, b=10),
+        height=900,
         barmode='overlay'  # 設定柱狀圖為疊加模式
     )
     
@@ -378,8 +378,8 @@ def create_momentum_dashboard(days=15, grid_size="2x2", page=1):
         column_widths = [0.4] + [0.6/right_cols] * right_cols
         
         # 創建子圖標題
-        subplot_titles = ["各類別總平均比較"]
-        
+        subplot_titles = ["Category Momentum Dashboard"]
+
         # 計算右側要顯示的類別
         items_per_page = right_rows * right_cols
         
@@ -552,22 +552,22 @@ def create_momentum_dashboard(days=15, grid_size="2x2", page=1):
         
         # 更新整體佈局
         combined_fig.update_layout(
-            height=850,  # 增加總高度以容納標題
+            height=900,  # 增加總高度以容納標題
             template='plotly_white',
-            margin=dict(l=50, r=50, t=50, b=50),  # 增加頂部邊距
+            margin=dict(t=20, l=10, r=10, b=10),  # 增加頂部邊距
             barmode='overlay'
         )
         
         # 在兩個圖的中間上方添加標題
-        combined_fig.add_annotation(
-            text=f'Category Momentum Dashboard | 天數: {days} (實際: {len(date_files)}) | {grid_size} 網格，第 {page} 頁',
-            xref="paper", yref="paper",
-            x=0.5, y=1.05,  # 將標題位置移到更高，超出圖表範圍
-            showarrow=False,
-            font=dict(size=14, color="black"),  # 稍微縮小字體
-            xanchor="center",
-            yanchor="middle"
-        )
+        # combined_fig.add_annotation(
+        #     text=f'Category Momentum Dashboard | 天數: {days} (實際: {len(date_files)}) | {grid_size} 網格，第 {page} 頁',
+        #     xref="paper", yref="paper",
+        #     x=0.5, y=1.05,  # 將標題位置移到更高，超出圖表範圍
+        #     showarrow=False,
+        #     font=dict(size=14, color="black"),  # 稍微縮小字體
+        #     xanchor="center",
+        #     yanchor="middle"
+        # )
         
         return combined_fig, f"資料已更新 (要求: {days} 天, 實際: {len(date_files)} 天)"
         
@@ -1506,7 +1506,7 @@ def update_momentum_page_dropdown_style(grid_size):
 def update_momentum_chart(n_clicks, grid_size, page, days):
     """更新 momentum 圖表"""
     if not days or days < 1:
-        return create_momentum_dashboard()[0], "請輸入有效的天數 (≥1)"
+        return create_momentum_dashboard()[0], "請輸入有效的天數 (1 ≤ x ≤ 30)"
     
     try:
         fig, status_msg = create_momentum_dashboard(days=days, grid_size=grid_size, page=page)
@@ -1649,8 +1649,8 @@ def update_treemap(n, display_mode, enable_notifications, momentum_days, momentu
         )
         
         fig.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)',  # 透明背景
             margin=dict(t=20, l=10, r=10, b=10),
+            paper_bgcolor='white',  # 白色背景
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
@@ -1692,13 +1692,15 @@ def update_treemap(n, display_mode, enable_notifications, momentum_days, momentu
         y_range = [-max_abs_change * 1.2, max_abs_change * 1.2]
 
         fig.update_layout(
-            xaxis=dict(title='Category', categoryorder='array', categoryarray=bubble_data['category']),  # X 軸按排序顯示
+            xaxis=dict(categoryorder='array', categoryarray=bubble_data['category']),  # X 軸按排序顯示
             yaxis=dict(title='Mean Change (%)', range=y_range),
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=50, l=10, r=10, b=10),
+            margin=dict(t=20, l=10, r=10, b=10),
+            paper_bgcolor='white',
             height=900,
             coloraxis_colorbar_tickformat='.2f'
         )
+        fig.update_xaxes(tickangle=90, tickfont=dict(size=12))
+
     elif display_mode == 'momentum':
         global g_first_open_momentum_chart
         if g_first_open_momentum_chart:
@@ -2371,8 +2373,8 @@ def refresh_transaction_list(n_clicks):
             # 計算可取消股數
             cancel_shares = trans['org_qty_share'] - trans['mat_qty_share'] #都成交完成了 case
             done_cancel_shares = trans['org_qty_share'] - trans['cel_qty_share'] #完整取消所有股數 case
-            can_not_cancel = (cancel_shares == 0 or done_cancel_shares == 0)
-            
+            can_not_cancel = (cancel_shares == 0 or done_cancel_shares == 0 or trans['celable'] == "2")
+
             # 設定按鈕樣式
             button_style = {
                 'backgroundColor': '#dc3545' if not can_not_cancel else '#6c757d',  # 紅色或灰色
@@ -2383,7 +2385,8 @@ def refresh_transaction_list(n_clicks):
                 'fontSize': '12px',
                 'opacity': '1' if not can_not_cancel else '0.65'
             }
-            
+            order_id = trans['pre_ord_no'] if trans['pre_ord_no'] != "" else trans['ord_no']
+
             transaction_rows.append(
                 html.Div([
                     html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '9.09%', 'display': 'inline-block'}),
@@ -2395,10 +2398,10 @@ def refresh_transaction_list(n_clicks):
                     html.Div(f"{trans['cel_qty_share']}", style={'width': '9.09%', 'display': 'inline-block'}),
                     html.Div(f"{trans['mat_qty_share']}", style={'width': '9.09%', 'display': 'inline-block'}),
                     html.Div(f"{trans.get('avg_price', '-')}", style={'width': '9.09%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['pre_ord_no']}", style={'width': '9.09%', 'display': 'inline-block'}),
+                    html.Div(f"{order_id}", style={'width': '9.09%', 'display': 'inline-block'}),
                     html.Div(
                         html.Button("取消", 
-                                  id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                                  id={'type': 'cancel-order-button', 'index': order_id},
                                   n_clicks=0,
                                   disabled=can_not_cancel,  # 如果不能取消則禁用按鈕
                                   style=button_style),
@@ -2460,8 +2463,10 @@ def cancel_all_transactions(n_clicks):
         for trans in transactions:
             # 檢查這筆訂單是否可以被取消
             can_cancel = (trans['org_qty_share'] - trans['mat_qty_share'] > 0 and 
-                        trans['org_qty_share'] - trans['cel_qty_share'] > 0)
-            
+                        trans['org_qty_share'] - trans['cel_qty_share'] > 0 and
+                        trans['celable'] == "1") # 'celable' -> 1:可取消 2:不可取消 (string)
+            order_id = trans['pre_ord_no'] if trans['pre_ord_no'] != "" else trans['ord_no']
+
             transaction_rows.append(
                 html.Div([
                     html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}",  style={'width': '10.0%', 'display': 'inline-block'}),
@@ -2472,11 +2477,11 @@ def cancel_all_transactions(n_clicks):
                     html.Div(f"{trans['cel_qty_share']}",  style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(f"{trans['mat_qty_share']}",  style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(f"{trans.get('avg_price', '-')}",  style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['pre_ord_no']}",  style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{order_id}",  style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(
                         html.Button(
                             "取消",
-                            id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                            id={'type': 'cancel-order-button', 'index': order_id},
                             n_clicks=0,
                             disabled=not can_cancel,
                             style={
@@ -2550,8 +2555,10 @@ def cancel_specific_order(n_clicks_list):
         for trans in transactions:
             # 檢查這筆訂單是否可以被取消
             can_cancel = (trans['org_qty_share'] - trans['mat_qty_share'] > 0 and 
-                        trans['org_qty_share'] - trans['cel_qty_share'] > 0)
-            
+                        trans['org_qty_share'] - trans['cel_qty_share'] > 0 and
+                        trans['celable'] == "1") # 'celable' -> 1:可取消 2:不可取消 (string)
+            order_id = trans['pre_ord_no'] if trans['pre_ord_no'] != "" else trans['ord_no']
+
             transaction_rows.append(
                 html.Div([
                     html.Div(f"{trans['ord_time'][:2]}:{trans['ord_time'][2:4]}:{trans['ord_time'][4:6]}", style={'width': '10.0%', 'display': 'inline-block'}),
@@ -2562,11 +2569,11 @@ def cancel_specific_order(n_clicks_list):
                     html.Div(f"{trans['cel_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(f"{trans['mat_qty_share']}", style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(f"{trans.get('avg_price', '-')}", style={'width': '10.0%', 'display': 'inline-block'}),
-                    html.Div(f"{trans['pre_ord_no']}", style={'width': '10.0%', 'display': 'inline-block'}),
+                    html.Div(f"{order_id}", style={'width': '10.0%', 'display': 'inline-block'}),
                     html.Div(
                         html.Button(
                             "取消", 
-                            id={'type': 'cancel-order-button', 'index': trans['pre_ord_no']},
+                            id={'type': 'cancel-order-button', 'index': order_id},
                             n_clicks=0,
                             disabled=not can_cancel,  # 如果不能取消就禁用按鈕
                             style={
