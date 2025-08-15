@@ -5,3 +5,5 @@ venv
 .env
 /stock_realtime_heatmap/esun_key_file/*.p12
 /stock_realtime_heatmap/esun_key_file/*.ini
+run_stock_heatmap.bat
+start_stock_heatmap.bat
